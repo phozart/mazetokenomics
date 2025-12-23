@@ -38,7 +38,7 @@ CREATE TYPE "ReviewDecision" AS ENUM ('APPROVE', 'REJECT', 'REQUEST_CHANGES', 'E
 CREATE TYPE "AnalysisStatus" AS ENUM ('PENDING', 'RUNNING', 'COMPLETED', 'FAILED');
 
 -- CreateEnum
-CREATE TYPE "WalletType" AS ENUM ('INDIVIDUAL', 'EXCHANGE', 'INSTITUTION', 'FOUNDATION', 'CONTRACT', 'DEX', 'MIXER', 'UNKNOWN');
+CREATE TYPE "WalletType" AS ENUM ('INDIVIDUAL', 'EXCHANGE', 'INSTITUTION', 'FOUNDATION', 'CONTRACT', 'DEX', 'MIXER', 'VAULT', 'AMM', 'CREATOR', 'UNKNOWN');
 
 -- CreateTable
 CREATE TABLE "User" (
@@ -245,6 +245,10 @@ CREATE TABLE "WalletTrace" (
     "primaryFundingSource" TEXT,
     "fundingSourceType" TEXT,
     "clusterId" TEXT,
+    "isLocked" BOOLEAN NOT NULL DEFAULT false,
+    "unlockDate" TIMESTAMP(3),
+    "lockerProgram" TEXT,
+    "lockedUsdValue" DOUBLE PRECISION,
     "riskFlags" JSONB,
     "riskFlagCount" INTEGER NOT NULL DEFAULT 0,
     "hasCriticalFlag" BOOLEAN NOT NULL DEFAULT false,
@@ -359,4 +363,25 @@ ALTER TABLE "WatchlistItem" ADD CONSTRAINT "WatchlistItem_userId_fkey" FOREIGN K
 
 -- AddForeignKey
 ALTER TABLE "WatchlistItem" ADD CONSTRAINT "WatchlistItem_tokenId_fkey" FOREIGN KEY ("tokenId") REFERENCES "Token"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- CreateTable
+CREATE TABLE "PriceSnapshot" (
+    "id" TEXT NOT NULL,
+    "contractAddress" TEXT NOT NULL,
+    "chain" "Chain" NOT NULL,
+    "priceUsd" DOUBLE PRECISION NOT NULL,
+    "marketCap" DOUBLE PRECISION,
+    "volume24h" DOUBLE PRECISION,
+    "liquidity" DOUBLE PRECISION,
+    "priceChange24h" DOUBLE PRECISION,
+    "timestamp" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "PriceSnapshot_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE INDEX "PriceSnapshot_contractAddress_chain_timestamp_idx" ON "PriceSnapshot"("contractAddress", "chain", "timestamp");
+
+-- CreateIndex
+CREATE INDEX "PriceSnapshot_timestamp_idx" ON "PriceSnapshot"("timestamp");
 

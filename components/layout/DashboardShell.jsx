@@ -230,7 +230,7 @@ export function DashboardShell({ user, children }) {
               Password
             </Link>
             <button
-              onClick={() => signOut({ callbackUrl: '/login' })}
+              onClick={() => signOut({ callbackUrl: `${window.location.origin}/login` })}
               className="flex-1 flex items-center justify-center gap-2 py-2 text-xs text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
             >
               <LogOut className="w-3.5 h-3.5" />

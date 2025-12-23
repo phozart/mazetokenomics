@@ -47,7 +47,21 @@ export async function GET(request) {
         batch.map(async (address) => {
           try {
             const dexData = await getTokenPairs(address);
-            const pair = dexData?.pairs?.[0];
+
+            // Filter to pairs where the token is the base token (not quote)
+            const relevantPairs = dexData?.pairs?.filter(p =>
+              p.baseToken?.address?.toLowerCase() === address.toLowerCase()
+            ) || [];
+
+            // Get the pair with highest liquidity
+            const pair = relevantPairs.sort((a, b) =>
+              (b.liquidity?.usd || 0) - (a.liquidity?.usd || 0)
+            )[0] || dexData?.pairs?.[0];
+
+            // Calculate total liquidity across all relevant pairs
+            const totalLiquidity = relevantPairs.reduce((sum, p) =>
+              sum + (parseFloat(p.liquidity?.usd) || 0), 0
+            );
 
             return {
               address,
@@ -56,7 +70,7 @@ export async function GET(request) {
                 priceChange24h: pair.priceChange?.h24 || 0,
                 marketCap: pair.marketCap || pair.fdv,
                 volume24h: pair.volume?.h24,
-                liquidity: pair.liquidity?.usd,
+                liquidity: totalLiquidity || pair.liquidity?.usd,
                 pairAddress: pair.pairAddress,
                 dexId: pair.dexId,
               } : null,

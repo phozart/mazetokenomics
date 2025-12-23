@@ -65,6 +65,12 @@ export async function GET(request, { params }) {
       case 'clustered':
         whereClause.clusterId = { not: null };
         break;
+      case 'locked':
+        whereClause.isLocked = true;
+        break;
+      case 'vaults':
+        whereClause.walletType = { in: ['VAULT', 'AMM'] };
+        break;
       // 'all' - no additional filters
     }
 
@@ -105,7 +111,7 @@ export async function GET(request, { params }) {
       },
       filters: {
         current: filter,
-        available: ['all', 'suspicious', 'fresh', 'clustered'],
+        available: ['all', 'suspicious', 'fresh', 'clustered', 'locked', 'vaults'],
       },
     });
   } catch (error) {

@@ -25,6 +25,12 @@ export async function GET(request) {
                 overallScore: true,
                 riskLevel: true,
                 status: true,
+                _count: {
+                  select: {
+                    redFlags: true,
+                    greenFlags: true,
+                  },
+                },
               },
             },
           },

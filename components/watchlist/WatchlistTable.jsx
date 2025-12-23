@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { ChainBadge, RiskBadge } from '@/components/ui/Badge';
 import { formatAddress } from '@/lib/utils';
-import { Trash2, ExternalLink, TrendingUp, TrendingDown, MoreVertical } from 'lucide-react';
+import { Trash2, ExternalLink, TrendingUp, TrendingDown, MoreVertical, Eye } from 'lucide-react';
 import { useState } from 'react';
 
 function formatPrice(price) {
@@ -48,7 +48,7 @@ function PriceChange({ change, compact = false }) {
 }
 
 // Compact card for mobile grid view
-function CompactCard({ item, priceData, onRemove, isLoading }) {
+function CompactCard({ item, priceData, onRemove, onTokenClick, isLoading }) {
   const [showMenu, setShowMenu] = useState(false);
   const symbol = item.token?.symbol || item.symbol || '???';
   const name = item.token?.name || item.name;
@@ -56,10 +56,18 @@ function CompactCard({ item, priceData, onRemove, isLoading }) {
   const change = priceData?.priceChange24h;
   const isPositive = change >= 0;
 
+  const handleCardClick = (e) => {
+    if (showMenu) {
+      setShowMenu(false);
+      return;
+    }
+    onTokenClick?.(item, priceData);
+  };
+
   return (
     <div
-      className="relative bg-dark-card border border-dark-border rounded-xl p-3 flex flex-col"
-      onClick={() => setShowMenu(false)}
+      className="relative bg-dark-card border border-dark-border rounded-xl p-3 flex flex-col cursor-pointer hover:border-brand-400/50 transition-colors"
+      onClick={handleCardClick}
     >
       {/* Menu button */}
       <button
@@ -74,16 +82,29 @@ function CompactCard({ item, priceData, onRemove, isLoading }) {
 
       {/* Dropdown menu */}
       {showMenu && (
-        <div className="absolute top-8 right-2 z-20 bg-dark-card border border-dark-border rounded-lg shadow-xl py-1 min-w-[120px]">
+        <div className="absolute top-8 right-2 z-20 bg-dark-card border border-dark-border rounded-lg shadow-xl py-1 min-w-[140px]">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowMenu(false);
+              onTokenClick?.(item, priceData);
+            }}
+            className="flex items-center gap-2 px-3 py-2 text-xs text-gray-300 hover:bg-dark-hover w-full text-left"
+          >
+            <Eye className="w-3 h-3" />
+            View Details
+          </button>
           {vettingProcess?.id && (
             <Link
               href={`/tokens/${vettingProcess.id}`}
               className="flex items-center gap-2 px-3 py-2 text-xs text-gray-300 hover:bg-dark-hover"
+              onClick={(e) => e.stopPropagation()}
             >
               <ExternalLink className="w-3 h-3" />
-              View Analysis
+              Full Analysis
             </Link>
           )}
+          <div className="border-t border-dark-border/50 my-1" />
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -132,7 +153,7 @@ function CompactCard({ item, priceData, onRemove, isLoading }) {
 }
 
 // Full card for tablet/larger mobile
-function MobileCard({ item, priceData, onRemove, isLoading }) {
+function MobileCard({ item, priceData, onRemove, onTokenClick, isLoading }) {
   const [showActions, setShowActions] = useState(false);
   const symbol = item.token?.symbol || item.symbol || 'Unknown';
   const name = item.token?.name || item.name;
@@ -141,7 +162,10 @@ function MobileCard({ item, priceData, onRemove, isLoading }) {
   const vettingProcess = item.token?.vettingProcess;
 
   return (
-    <div className="bg-dark-card border border-dark-border rounded-xl p-4 space-y-3">
+    <div
+      className="bg-dark-card border border-dark-border rounded-xl p-4 space-y-3 cursor-pointer hover:border-brand-400/50 transition-colors"
+      onClick={() => onTokenClick?.(item, priceData)}
+    >
       {/* Header Row */}
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
@@ -218,22 +242,39 @@ function MobileCard({ item, priceData, onRemove, isLoading }) {
 
       {/* Actions (expandable) */}
       {showActions && (
-        <div className="flex items-center gap-2 pt-2 border-t border-dark-border/50">
-          {vettingProcess?.id && (
-            <Link
-              href={`/tokens/${vettingProcess.id}`}
-              className="flex-1 flex items-center justify-center gap-2 py-2 text-sm text-gray-400 hover:text-brand-400 hover:bg-brand-400/10 rounded-lg transition-colors"
+        <div className="flex flex-col gap-2 pt-2 border-t border-dark-border/50">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowActions(false);
+                onTokenClick?.(item, priceData);
+              }}
+              className="flex-1 flex items-center justify-center gap-2 py-2 text-sm text-gray-300 hover:text-brand-400 hover:bg-brand-400/10 rounded-lg transition-colors"
             >
-              <ExternalLink className="w-4 h-4" />
-              View Analysis
-            </Link>
-          )}
+              <Eye className="w-4 h-4" />
+              View Details
+            </button>
+            {vettingProcess?.id && (
+              <Link
+                href={`/tokens/${vettingProcess.id}`}
+                onClick={(e) => e.stopPropagation()}
+                className="flex-1 flex items-center justify-center gap-2 py-2 text-sm text-gray-400 hover:text-brand-400 hover:bg-brand-400/10 rounded-lg transition-colors"
+              >
+                <ExternalLink className="w-4 h-4" />
+                Full Analysis
+              </Link>
+            )}
+          </div>
           <button
-            onClick={() => onRemove(item.id)}
-            className="flex-1 flex items-center justify-center gap-2 py-2 text-sm text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove(item.id);
+            }}
+            className="w-full flex items-center justify-center gap-2 py-2 text-sm text-gray-500 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors border-t border-dark-border/50 pt-2 mt-1"
           >
             <Trash2 className="w-4 h-4" />
-            Remove
+            Remove from Watchlist
           </button>
         </div>
       )}
@@ -241,7 +282,7 @@ function MobileCard({ item, priceData, onRemove, isLoading }) {
   );
 }
 
-function DesktopTable({ items, prices, onRemove, isLoading }) {
+function DesktopTable({ items, prices, onRemove, onTokenClick, isLoading }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full">
@@ -266,7 +307,11 @@ function DesktopTable({ items, prices, onRemove, isLoading }) {
             const vettingProcess = item.token?.vettingProcess;
 
             return (
-              <tr key={item.id} className="table-row">
+              <tr
+                key={item.id}
+                className="table-row cursor-pointer hover:bg-dark-hover/50"
+                onClick={() => onTokenClick?.(item, priceData)}
+              >
                 <td className="table-cell px-6">
                   <div className="font-medium text-gray-100">{symbol}</div>
                   {name && <div className="text-xs text-gray-500">{name}</div>}
@@ -311,8 +356,15 @@ function DesktopTable({ items, prices, onRemove, isLoading }) {
                     <span className="text-gray-500 text-sm">-</span>
                   )}
                 </td>
-                <td className="table-cell px-6 text-right">
+                <td className="table-cell px-6 text-right" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center justify-end gap-2">
+                    <button
+                      onClick={() => onTokenClick?.(item, priceData)}
+                      className="p-1.5 text-gray-400 hover:text-brand-400 hover:bg-brand-400/10 rounded transition-colors"
+                      title="View Details"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
                     {vettingProcess?.id && (
                       <Link
                         href={`/tokens/${vettingProcess.id}`}
@@ -340,15 +392,40 @@ function DesktopTable({ items, prices, onRemove, isLoading }) {
   );
 }
 
-export function WatchlistTable({ items, prices, onRemove, isLoading }) {
+export function WatchlistTable({ items, prices, onRemove, onTokenClick, isLoading }) {
   if (!items || items.length === 0) {
     return (
-      <div className="text-center py-12 text-gray-400">
-        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-brand-500/10 flex items-center justify-center">
-          <TrendingUp className="w-8 h-8 text-brand-400" />
+      <div className="text-center py-12 px-6">
+        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br from-brand-500/20 to-accent-500/20 flex items-center justify-center">
+          <TrendingUp className="w-10 h-10 text-brand-400" />
         </div>
-        <p className="font-medium">Your watchlist is empty</p>
-        <p className="text-sm mt-1 text-gray-500">Add tokens to track their prices</p>
+        <h3 className="text-lg font-semibold text-gray-200 mb-2">Your watchlist is empty</h3>
+        <p className="text-sm text-gray-500 mb-6 max-w-sm mx-auto">
+          Start tracking tokens to monitor prices, analyze security, and stay informed about your investments.
+        </p>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-6">
+          <div className="flex items-center gap-2 text-sm text-gray-400">
+            <div className="w-6 h-6 rounded-full bg-brand-400/20 flex items-center justify-center text-brand-400 text-xs font-bold">1</div>
+            <span>Click &quot;Add Token&quot;</span>
+          </div>
+          <div className="hidden sm:block text-gray-600">→</div>
+          <div className="flex items-center gap-2 text-sm text-gray-400">
+            <div className="w-6 h-6 rounded-full bg-brand-400/20 flex items-center justify-center text-brand-400 text-xs font-bold">2</div>
+            <span>Paste contract address</span>
+          </div>
+          <div className="hidden sm:block text-gray-600">→</div>
+          <div className="flex items-center gap-2 text-sm text-gray-400">
+            <div className="w-6 h-6 rounded-full bg-brand-400/20 flex items-center justify-center text-brand-400 text-xs font-bold">3</div>
+            <span>Track & analyze</span>
+          </div>
+        </div>
+        <Link
+          href="/help"
+          className="inline-flex items-center gap-1.5 text-sm text-brand-400 hover:text-brand-300 transition-colors"
+        >
+          Learn more about features
+          <ExternalLink className="w-3.5 h-3.5" />
+        </Link>
       </div>
     );
   }
@@ -363,6 +440,7 @@ export function WatchlistTable({ items, prices, onRemove, isLoading }) {
             item={item}
             priceData={prices?.[item.id]}
             onRemove={onRemove}
+            onTokenClick={onTokenClick}
             isLoading={isLoading}
           />
         ))}
@@ -376,6 +454,7 @@ export function WatchlistTable({ items, prices, onRemove, isLoading }) {
             item={item}
             priceData={prices?.[item.id]}
             onRemove={onRemove}
+            onTokenClick={onTokenClick}
             isLoading={isLoading}
           />
         ))}
@@ -387,6 +466,7 @@ export function WatchlistTable({ items, prices, onRemove, isLoading }) {
           items={items}
           prices={prices}
           onRemove={onRemove}
+          onTokenClick={onTokenClick}
           isLoading={isLoading}
         />
       </div>

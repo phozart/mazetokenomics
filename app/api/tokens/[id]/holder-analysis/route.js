@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
 import { runHolderAnalysis, traceFundingChain } from '@/lib/api/holder-analysis';
+import { getRugCheckReport, parseRugCheckData } from '@/lib/api/rugcheck';
 
 /**
  * GET /api/tokens/[id]/holder-analysis
@@ -165,18 +166,62 @@ export async function POST(request, { params }) {
         data: updateData,
       });
 
+      // Fetch RugCheck data for Solana tokens to get vault/lock info
+      let rugCheckData = null;
+      let knownAccountsMap = {};
+      let lockersMap = {};
+
+      if (token.chain === 'SOLANA') {
+        try {
+          const rawRugCheck = await getRugCheckReport(token.contractAddress);
+          if (rawRugCheck) {
+            rugCheckData = parseRugCheckData(rawRugCheck);
+            knownAccountsMap = rugCheckData.knownAccounts || {};
+            // Create a map of locker addresses for quick lookup
+            if (rugCheckData.lockers) {
+              rugCheckData.lockers.forEach(l => {
+                lockersMap[l.address] = l;
+              });
+            }
+          }
+        } catch (e) {
+          console.error('Failed to fetch RugCheck data for vault/lock info:', e);
+        }
+      }
+
       // Create wallet traces for top holders
       if (results.TOP_HOLDER_WALLET_AGE?.rawData) {
-        const walletTraces = results.TOP_HOLDER_WALLET_AGE.rawData.map((holder, index) => ({
-          holderAnalysisId: holderAnalysis.id,
-          walletAddress: holder.address,
-          chain: token.chain,
-          percentage: holder.percentage,
-          ageInDays: holder.ageInDays,
-          rank: index + 1,
-          walletType: 'UNKNOWN',
-          riskFlagCount: 0,
-        }));
+        const walletTraces = results.TOP_HOLDER_WALLET_AGE.rawData.map((holder, index) => {
+          // Get vault/lock info from RugCheck data
+          const knownAccount = knownAccountsMap[holder.address];
+          const lockerInfo = lockersMap[holder.address];
+
+          // Determine wallet type based on known account info
+          let walletType = 'UNKNOWN';
+          if (knownAccount?.type === 'LOCKER') walletType = 'VAULT';
+          else if (knownAccount?.type === 'AMM') walletType = 'AMM';
+          else if (knownAccount?.type === 'CREATOR') walletType = 'CREATOR';
+
+          // Check if wallet is locked
+          const isLocked = knownAccount?.type === 'LOCKER' || !!lockerInfo;
+          const unlockDate = lockerInfo?.unlockDate || null;
+
+          return {
+            holderAnalysisId: holderAnalysis.id,
+            walletAddress: holder.address,
+            chain: token.chain,
+            percentage: holder.percentage,
+            ageInDays: holder.ageInDays,
+            rank: index + 1,
+            walletType,
+            label: knownAccount?.name || null,
+            isLocked,
+            unlockDate,
+            lockerProgram: lockerInfo?.type || (knownAccount?.name || null),
+            lockedUsdValue: lockerInfo?.usdcLocked || null,
+            riskFlagCount: 0,
+          };
+        });
 
         // Delete existing traces and create new ones
         await prisma.walletTrace.deleteMany({

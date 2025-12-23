@@ -11,6 +11,11 @@ import {
   ChevronRight,
   Search,
   Filter,
+  Lock,
+  Unlock,
+  Vault,
+  Droplets,
+  Sparkles,
 } from 'lucide-react';
 
 /**
@@ -29,12 +34,80 @@ function copyToClipboard(text) {
 }
 
 /**
+ * Format unlock date for display
+ */
+function formatUnlockDate(date) {
+  if (!date) return null;
+  const d = new Date(date);
+  const now = new Date();
+  const diffDays = Math.ceil((d - now) / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) return 'Unlocked';
+  if (diffDays === 0) return 'Today';
+  if (diffDays <= 30) return `${diffDays}d`;
+  if (diffDays <= 365) return `${Math.round(diffDays / 30)}mo`;
+  return `${Math.round(diffDays / 365)}yr`;
+}
+
+/**
+ * Get wallet type display info
+ */
+function getWalletTypeInfo(wallet) {
+  const type = wallet.walletType;
+  const label = wallet.label;
+
+  if (type === 'VAULT') {
+    return {
+      icon: Vault,
+      text: label || 'Vault',
+      className: 'text-green-400',
+      bgClass: 'bg-green-400/10',
+    };
+  }
+  if (type === 'AMM') {
+    return {
+      icon: Droplets,
+      text: label || 'LP Pool',
+      className: 'text-blue-400',
+      bgClass: 'bg-blue-400/10',
+    };
+  }
+  if (type === 'CREATOR') {
+    return {
+      icon: Sparkles,
+      text: 'Creator',
+      className: 'text-purple-400',
+      bgClass: 'bg-purple-400/10',
+    };
+  }
+  if (type === 'EXCHANGE') {
+    return {
+      icon: null,
+      text: 'Exchange',
+      className: 'text-orange-400',
+      bgClass: 'bg-orange-400/10',
+    };
+  }
+
+  return {
+    icon: null,
+    text: 'Unknown',
+    className: 'text-gray-400',
+    bgClass: '',
+  };
+}
+
+/**
  * Wallet row component
  */
 function WalletRow({ wallet, rank, onClick, explorerBaseUrl }) {
   const hasFlags = wallet.riskFlagCount > 0;
   const isFresh = wallet.ageInDays !== null && wallet.ageInDays < 7;
   const isClustered = wallet.clusterId !== null;
+  const isLocked = wallet.isLocked;
+  const unlockDateStr = formatUnlockDate(wallet.unlockDate);
+  const typeInfo = getWalletTypeInfo(wallet);
+  const TypeIcon = typeInfo.icon;
 
   return (
     <tr
@@ -83,9 +156,26 @@ function WalletRow({ wallet, rank, onClick, explorerBaseUrl }) {
 
       {/* Type */}
       <td className="px-4 py-3">
-        <span className="text-xs text-gray-400">
-          {wallet.walletType || 'Unknown'}
-        </span>
+        <div className="flex items-center gap-1.5">
+          {TypeIcon && <TypeIcon className={cn('w-3.5 h-3.5', typeInfo.className)} />}
+          <span className={cn('text-xs', typeInfo.className)}>
+            {typeInfo.text}
+          </span>
+        </div>
+      </td>
+
+      {/* Lock Status */}
+      <td className="px-4 py-3">
+        {isLocked ? (
+          <div className="flex items-center gap-1.5">
+            <Lock className="w-3.5 h-3.5 text-green-400" />
+            <span className="text-xs text-green-400">
+              {unlockDateStr ? `Until ${unlockDateStr}` : 'Locked'}
+            </span>
+          </div>
+        ) : (
+          <span className="text-xs text-gray-500">-</span>
+        )}
       </td>
 
       {/* Flags */}
@@ -156,6 +246,8 @@ export function WalletList({
     { id: 'suspicious', label: 'Suspicious' },
     { id: 'fresh', label: 'Fresh Wallets' },
     { id: 'clustered', label: 'Clustered' },
+    { id: 'locked', label: 'Locked' },
+    { id: 'vaults', label: 'Vaults/AMMs' },
   ];
 
   // Filter wallets by search query
@@ -229,6 +321,9 @@ export function WalletList({
                 Type
               </th>
               <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Lock Status
+              </th>
+              <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Flags
               </th>
               <th className="px-4 py-3 text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -238,7 +333,7 @@ export function WalletList({
           <tbody>
             {filteredWallets.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                <td colSpan={8} className="px-4 py-8 text-center text-gray-500">
                   No wallets found
                 </td>
               </tr>

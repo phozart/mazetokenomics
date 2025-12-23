@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Header } from '@/components/layout/Header';
 import { Card, CardContent } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { WatchlistTable, QuickAddModal } from '@/components/watchlist';
-import { Plus, RefreshCw, Loader2 } from 'lucide-react';
+import { TokenDetailModal } from '@/components/token';
+import { Plus, RefreshCw, Loader2, Undo2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function HomePage() {
@@ -15,6 +16,8 @@ export default function HomePage() {
   const [refreshing, setRefreshing] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [lastUpdated, setLastUpdated] = useState(null);
+  const [selectedToken, setSelectedToken] = useState(null);
+  const [selectedPriceData, setSelectedPriceData] = useState(null);
 
   const fetchWatchlist = useCallback(async () => {
     try {
@@ -58,23 +61,101 @@ export default function HomePage() {
     }
   }, [watchlist.length, fetchPrices]);
 
+  // Track pending deletes for undo functionality
+  const pendingDeleteRef = useRef(null);
+
   const handleRemove = async (id) => {
-    try {
-      const response = await fetch(`/api/watchlist/${id}`, {
-        method: 'DELETE',
-      });
+    // Find the item being removed for potential undo
+    const removedItem = watchlist.find((item) => item.id === id);
+    const removedIndex = watchlist.findIndex((item) => item.id === id);
 
-      if (!response.ok) throw new Error('Failed to remove');
+    if (!removedItem) return;
 
-      setWatchlist((prev) => prev.filter((item) => item.id !== id));
-      toast.success('Removed from watchlist');
-    } catch (error) {
-      toast.error('Failed to remove');
+    // Optimistically remove from UI
+    setWatchlist((prev) => prev.filter((item) => item.id !== id));
+
+    // Clear any existing pending delete
+    if (pendingDeleteRef.current) {
+      clearTimeout(pendingDeleteRef.current.timeout);
     }
+
+    // Create undo handler
+    const handleUndo = () => {
+      // Cancel the pending delete
+      if (pendingDeleteRef.current) {
+        clearTimeout(pendingDeleteRef.current.timeout);
+        pendingDeleteRef.current = null;
+      }
+      // Restore the item at its original position
+      setWatchlist((prev) => {
+        const newList = [...prev];
+        newList.splice(removedIndex, 0, removedItem);
+        return newList;
+      });
+      toast.dismiss();
+      toast.success('Restored to watchlist');
+    };
+
+    // Show toast with undo option
+    toast(
+      (t) => (
+        <div className="flex items-center gap-3">
+          <span>Removed from watchlist</span>
+          <button
+            onClick={() => {
+              handleUndo();
+              toast.dismiss(t.id);
+            }}
+            className="flex items-center gap-1 px-2 py-1 bg-brand-400/20 text-brand-400 rounded text-sm font-medium hover:bg-brand-400/30 transition-colors"
+          >
+            <Undo2 className="w-3 h-3" />
+            Undo
+          </button>
+        </div>
+      ),
+      {
+        duration: 5000,
+        position: 'bottom-center',
+      }
+    );
+
+    // Schedule the actual delete after 5 seconds
+    pendingDeleteRef.current = {
+      id,
+      timeout: setTimeout(async () => {
+        try {
+          const response = await fetch(`/api/watchlist/${id}`, {
+            method: 'DELETE',
+          });
+          if (!response.ok) {
+            throw new Error('Failed to remove');
+          }
+        } catch (error) {
+          // If delete fails, restore the item
+          setWatchlist((prev) => {
+            const newList = [...prev];
+            newList.splice(removedIndex, 0, removedItem);
+            return newList;
+          });
+          toast.error('Failed to remove. Item restored.');
+        }
+        pendingDeleteRef.current = null;
+      }, 5000),
+    };
   };
 
   const handleAdded = () => {
     fetchWatchlist();
+  };
+
+  const handleTokenClick = (item, priceData) => {
+    setSelectedToken(item);
+    setSelectedPriceData(priceData);
+  };
+
+  const closeTokenModal = () => {
+    setSelectedToken(null);
+    setSelectedPriceData(null);
   };
 
   if (loading) {
@@ -129,6 +210,7 @@ export default function HomePage() {
               items={watchlist}
               prices={prices}
               onRemove={handleRemove}
+              onTokenClick={handleTokenClick}
               isLoading={refreshing && Object.keys(prices).length === 0}
             />
           </CardContent>
@@ -146,6 +228,27 @@ export default function HomePage() {
         onClose={() => setShowAddModal(false)}
         onAdded={handleAdded}
       />
+
+      {selectedToken && (
+        <TokenDetailModal
+          isOpen={!!selectedToken}
+          onClose={closeTokenModal}
+          contractAddress={selectedToken.token?.contractAddress || selectedToken.contractAddress}
+          chain={selectedToken.token?.chain || selectedToken.chain}
+          symbol={selectedToken.token?.symbol || selectedToken.symbol}
+          name={selectedToken.token?.name || selectedToken.name}
+          vettingProcessId={selectedToken.token?.vettingProcess?.id}
+          currentPrice={selectedPriceData?.priceUsd}
+          priceChange24h={selectedPriceData?.priceChange24h}
+          marketCap={selectedPriceData?.marketCap}
+          volume24h={selectedPriceData?.volume24h}
+          liquidity={selectedPriceData?.liquidity}
+          overallScore={selectedToken.token?.vettingProcess?.overallScore}
+          riskLevel={selectedToken.token?.vettingProcess?.riskLevel}
+          redFlagCount={selectedToken.token?.vettingProcess?._count?.redFlags}
+          greenFlagCount={selectedToken.token?.vettingProcess?._count?.greenFlags}
+        />
+      )}
     </div>
   );
 }

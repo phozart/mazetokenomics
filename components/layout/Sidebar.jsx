@@ -14,6 +14,7 @@ import {
   Plus,
   LogOut,
   Star,
+  HelpCircle,
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 
@@ -25,6 +26,7 @@ const navigation = [
   { name: 'Team', href: '/team', icon: Users },
   { name: 'Reports', href: '/reports', icon: FileText },
   { name: 'Settings', href: '/settings', icon: Settings },
+  { name: 'Help', href: '/help', icon: HelpCircle },
 ];
 
 export function Sidebar({ user }) {
@@ -100,7 +102,7 @@ export function Sidebar({ user }) {
             </p>
           </div>
           <button
-            onClick={() => signOut({ callbackUrl: '/login' })}
+            onClick={() => signOut({ callbackUrl: `${window.location.origin}/login` })}
             className="p-1.5 text-gray-400 hover:text-gray-200 hover:bg-dark-hover rounded-lg transition-colors"
             title="Sign out"
           >

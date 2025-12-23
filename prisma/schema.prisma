@@ -440,6 +440,12 @@ model WalletTrace {
   // Cluster Membership
   clusterId             String?
 
+  // Token Lock Info (for vault/locker wallets)
+  isLocked              Boolean         @default(false)
+  unlockDate            DateTime?       // When tokens unlock (null = permanent or unknown)
+  lockerProgram         String?         // e.g., "Streamflow", "Raydium CLMM"
+  lockedUsdValue        Float?          // USD value of locked tokens
+
   // Risk Flags (JSON - array of {type, severity, description})
   riskFlags             Json?
   riskFlagCount         Int             @default(0)
@@ -471,6 +477,9 @@ enum WalletType {
   CONTRACT
   DEX
   MIXER
+  VAULT         // Token lock vault (e.g., Streamflow)
+  AMM           // AMM/LP pool
+  CREATOR       // Token creator wallet
   UNKNOWN
 }
 
@@ -502,4 +511,25 @@ model WatchlistItem {
   @@unique([userId, tokenId])
   @@unique([userId, contractAddress, chain])
   @@index([userId])
+}
+
+// ============================================================================
+// PRICE HISTORY FEATURE
+// ============================================================================
+
+model PriceSnapshot {
+  id              String   @id @default(cuid())
+  contractAddress String
+  chain           Chain
+
+  priceUsd        Float
+  marketCap       Float?
+  volume24h       Float?
+  liquidity       Float?
+  priceChange24h  Float?
+
+  timestamp       DateTime @default(now())
+
+  @@index([contractAddress, chain, timestamp])
+  @@index([timestamp])
 }
