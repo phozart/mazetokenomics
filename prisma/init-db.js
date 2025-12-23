@@ -19,37 +19,14 @@ async function initDatabase() {
     }
   }
 
-  // Create all tables using raw SQL
-  await prisma.$executeRawUnsafe(`
-    -- Create enums
-    DO $$ BEGIN
-      CREATE TYPE "Chain" AS ENUM ('ETHEREUM', 'BSC', 'POLYGON', 'ARBITRUM', 'OPTIMISM', 'BASE', 'SOLANA', 'AVALANCHE', 'FANTOM', 'CRONOS', 'OTHER');
-    EXCEPTION WHEN duplicate_object THEN null; END $$;
-
-    DO $$ BEGIN
-      CREATE TYPE "VettingStatus" AS ENUM ('PENDING', 'IN_PROGRESS', 'COMPLETED', 'FAILED', 'ON_HOLD');
-    EXCEPTION WHEN duplicate_object THEN null; END $$;
-
-    DO $$ BEGIN
-      CREATE TYPE "Priority" AS ENUM ('LOW', 'NORMAL', 'HIGH', 'URGENT');
-    EXCEPTION WHEN duplicate_object THEN null; END $$;
-
-    DO $$ BEGIN
-      CREATE TYPE "RiskLevel" AS ENUM ('SAFE', 'LOW_RISK', 'MEDIUM_RISK', 'HIGH_RISK', 'CRITICAL');
-    EXCEPTION WHEN duplicate_object THEN null; END $$;
-
-    DO $$ BEGIN
-      CREATE TYPE "CheckCategory" AS ENUM ('CONTRACT', 'HOLDER', 'LIQUIDITY', 'SOCIAL', 'MARKET', 'TEAM', 'OTHER');
-    EXCEPTION WHEN duplicate_object THEN null; END $$;
-
-    DO $$ BEGIN
-      CREATE TYPE "CheckStatus" AS ENUM ('PENDING', 'RUNNING', 'PASSED', 'FAILED', 'WARNING', 'ERROR', 'SKIPPED');
-    EXCEPTION WHEN duplicate_object THEN null; END $$;
-
-    DO $$ BEGIN
-      CREATE TYPE "Role" AS ENUM ('ADMIN', 'USER', 'VIEWER');
-    EXCEPTION WHEN duplicate_object THEN null; END $$;
-  `);
+  // Create enums one by one
+  await prisma.$executeRawUnsafe(`DO $$ BEGIN CREATE TYPE "Chain" AS ENUM ('ETHEREUM', 'BSC', 'POLYGON', 'ARBITRUM', 'OPTIMISM', 'BASE', 'SOLANA', 'AVALANCHE', 'FANTOM', 'CRONOS', 'OTHER'); EXCEPTION WHEN duplicate_object THEN null; END $$`);
+  await prisma.$executeRawUnsafe(`DO $$ BEGIN CREATE TYPE "VettingStatus" AS ENUM ('PENDING', 'IN_PROGRESS', 'COMPLETED', 'FAILED', 'ON_HOLD'); EXCEPTION WHEN duplicate_object THEN null; END $$`);
+  await prisma.$executeRawUnsafe(`DO $$ BEGIN CREATE TYPE "Priority" AS ENUM ('LOW', 'NORMAL', 'HIGH', 'URGENT'); EXCEPTION WHEN duplicate_object THEN null; END $$`);
+  await prisma.$executeRawUnsafe(`DO $$ BEGIN CREATE TYPE "RiskLevel" AS ENUM ('SAFE', 'LOW_RISK', 'MEDIUM_RISK', 'HIGH_RISK', 'CRITICAL'); EXCEPTION WHEN duplicate_object THEN null; END $$`);
+  await prisma.$executeRawUnsafe(`DO $$ BEGIN CREATE TYPE "CheckCategory" AS ENUM ('CONTRACT', 'HOLDER', 'LIQUIDITY', 'SOCIAL', 'MARKET', 'TEAM', 'OTHER'); EXCEPTION WHEN duplicate_object THEN null; END $$`);
+  await prisma.$executeRawUnsafe(`DO $$ BEGIN CREATE TYPE "CheckStatus" AS ENUM ('PENDING', 'RUNNING', 'PASSED', 'FAILED', 'WARNING', 'ERROR', 'SKIPPED'); EXCEPTION WHEN duplicate_object THEN null; END $$`);
+  await prisma.$executeRawUnsafe(`DO $$ BEGIN CREATE TYPE "Role" AS ENUM ('ADMIN', 'USER', 'VIEWER'); EXCEPTION WHEN duplicate_object THEN null; END $$`);
 
   // Create User table
   await prisma.$executeRawUnsafe(`
@@ -83,9 +60,9 @@ async function initDatabase() {
       "logoUrl" TEXT,
       "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
       "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE UNIQUE INDEX IF NOT EXISTS "Token_contractAddress_chain_key" ON "Token"("contractAddress", "chain");
+    )
   `);
+  await prisma.$executeRawUnsafe(`CREATE UNIQUE INDEX IF NOT EXISTS "Token_contractAddress_chain_key" ON "Token"("contractAddress", "chain")`);
 
   // Create VettingProcess table
   await prisma.$executeRawUnsafe(`
@@ -121,9 +98,9 @@ async function initDatabase() {
       "message" TEXT,
       "executedAt" TIMESTAMP(3),
       "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE INDEX IF NOT EXISTS "AutomatedCheck_vettingId_idx" ON "AutomatedCheck"("vettingId");
+    )
   `);
+  await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "AutomatedCheck_vettingId_idx" ON "AutomatedCheck"("vettingId")`);
 
   // Create ManualCheck table
   await prisma.$executeRawUnsafe(`
@@ -139,9 +116,9 @@ async function initDatabase() {
       "checkedBy" TEXT,
       "checkedAt" TIMESTAMP(3),
       "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE INDEX IF NOT EXISTS "ManualCheck_vettingId_idx" ON "ManualCheck"("vettingId");
+    )
   `);
+  await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "ManualCheck_vettingId_idx" ON "ManualCheck"("vettingId")`);
 
   // Create HolderAnalysis table
   await prisma.$executeRawUnsafe(`
@@ -174,9 +151,9 @@ async function initDatabase() {
       "notes" TEXT,
       "addedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
       "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
-    );
-    CREATE INDEX IF NOT EXISTS "WatchlistItem_userId_idx" ON "WatchlistItem"("userId");
+    )
   `);
+  await prisma.$executeRawUnsafe(`CREATE INDEX IF NOT EXISTS "WatchlistItem_userId_idx" ON "WatchlistItem"("userId")`);
 
   console.log('Database schema created successfully!');
   return false;
