@@ -6,20 +6,7 @@ const path = require('path');
 const prisma = new PrismaClient();
 
 async function initDatabase() {
-  console.log('Checking database schema...');
-
-  // Check if tables exist
-  try {
-    await prisma.$queryRaw`SELECT 1 FROM "User" LIMIT 1`;
-    console.log('Database schema already exists');
-    return true;
-  } catch (error) {
-    if (error.code === '42P01' || error.message.includes('does not exist')) {
-      console.log('Tables do not exist, creating schema...');
-    } else {
-      throw error;
-    }
-  }
+  console.log('Applying database schema...');
 
   // Read the SQL schema file
   const schemaPath = path.join(__dirname, 'schema.sql');
@@ -47,8 +34,7 @@ async function initDatabase() {
     }
   }
 
-  console.log('Database schema created successfully!');
-  return false;
+  console.log('Database schema applied successfully!');
 }
 
 async function seedDatabase() {
