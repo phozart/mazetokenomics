@@ -226,16 +226,44 @@ export function TokenDetailModal({
 
         {/* Header */}
         <div className="flex items-start justify-between">
-          <div>
-            <div className="flex items-center gap-3">
-              <h2 className="text-xl font-bold text-gray-100">
-                {symbol || 'Unknown'}
-              </h2>
-              <ChainBadge chain={chain} />
+          <div className="flex items-start gap-4">
+            {/* Score Circle */}
+            {(overallScore !== null && overallScore !== undefined) || securityChecks?.rugcheckScore !== undefined ? (
+              <div className="flex-shrink-0">
+                <div className={`w-16 h-16 rounded-full flex flex-col items-center justify-center border-4 ${
+                  (overallScore ?? (securityChecks?.rugcheckScore * 100)) >= 70
+                    ? 'border-green-500 bg-green-500/10'
+                    : (overallScore ?? (securityChecks?.rugcheckScore * 100)) >= 40
+                    ? 'border-yellow-500 bg-yellow-500/10'
+                    : 'border-red-500 bg-red-500/10'
+                }`}>
+                  <span className={`text-xl font-bold ${
+                    (overallScore ?? (securityChecks?.rugcheckScore * 100)) >= 70
+                      ? 'text-green-400'
+                      : (overallScore ?? (securityChecks?.rugcheckScore * 100)) >= 40
+                      ? 'text-yellow-400'
+                      : 'text-red-400'
+                  }`}>
+                    {overallScore !== null && overallScore !== undefined
+                      ? Math.round(overallScore)
+                      : Math.round(securityChecks?.rugcheckScore * 100)}
+                  </span>
+                  <span className="text-[10px] text-gray-500 -mt-0.5">score</span>
+                </div>
+              </div>
+            ) : null}
+            <div>
+              <div className="flex items-center gap-3">
+                <h2 className="text-xl font-bold text-gray-100">
+                  {symbol || 'Unknown'}
+                </h2>
+                <ChainBadge chain={chain} />
+                {riskLevel && <RiskBadge riskLevel={riskLevel} />}
+              </div>
+              {name && (
+                <p className="text-sm text-gray-400 mt-1">{name}</p>
+              )}
             </div>
-            {name && (
-              <p className="text-sm text-gray-400 mt-1">{name}</p>
-            )}
           </div>
           <div className="flex items-center gap-2">
             {vettingProcessId ? (
