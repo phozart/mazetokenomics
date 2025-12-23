@@ -31,6 +31,7 @@ import {
   Edit3,
   X,
   Check,
+  Sparkles,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -216,6 +217,17 @@ export function TokenDetailModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="" size="lg">
       <div className="space-y-4">
+        {/* Maze Branding */}
+        <div className="flex items-center gap-2 pb-3 border-b border-dark-border/50">
+          <div className="w-7 h-7 bg-gradient-to-br from-brand-500 to-accent-400 rounded-lg flex items-center justify-center">
+            <Sparkles className="w-4 h-4 text-white" />
+          </div>
+          <div className="flex items-baseline gap-1">
+            <span className="text-sm font-bold cosmic-text">Maze</span>
+            <span className="text-[10px] text-gray-500">Token Analytics</span>
+          </div>
+        </div>
+
         {/* Header */}
         <div className="flex items-start justify-between">
           <div>
