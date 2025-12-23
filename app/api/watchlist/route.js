@@ -39,10 +39,56 @@ export async function GET(request) {
       orderBy: { addedAt: 'desc' },
     });
 
+    // For items without a linked token, try to find a matching token by contract address
+    // This handles cases where a token was added to watchlist before being analyzed
+    const enhancedWatchlist = await Promise.all(
+      watchlist.map(async (item) => {
+        // If already has a linked token with vetting data, use it
+        if (item.token?.vettingProcess) {
+          return item;
+        }
+
+        // Try to find a token by contract address
+        if (item.contractAddress && item.chain) {
+          const matchingToken = await prisma.token.findFirst({
+            where: {
+              contractAddress: {
+                equals: item.contractAddress,
+                mode: 'insensitive', // Case-insensitive match for addresses
+              },
+              chain: item.chain,
+            },
+            include: {
+              vettingProcess: {
+                select: {
+                  id: true,
+                  overallScore: true,
+                  riskLevel: true,
+                  status: true,
+                  _count: {
+                    select: {
+                      redFlags: true,
+                      greenFlags: true,
+                    },
+                  },
+                },
+              },
+            },
+          });
+
+          if (matchingToken) {
+            return { ...item, token: matchingToken };
+          }
+        }
+
+        return item;
+      })
+    );
+
     // If prices requested, fetch live data from DexScreener
     if (includePrices) {
       const itemsWithPrices = await Promise.all(
-        watchlist.map(async (item) => {
+        enhancedWatchlist.map(async (item) => {
           const address = item.token?.contractAddress || item.contractAddress;
           if (!address) return { ...item, priceData: null };
 
@@ -70,7 +116,7 @@ export async function GET(request) {
       return NextResponse.json({ watchlist: itemsWithPrices });
     }
 
-    return NextResponse.json({ watchlist });
+    return NextResponse.json({ watchlist: enhancedWatchlist });
   } catch (error) {
     console.error('Watchlist fetch error:', error);
     return NextResponse.json({ error: 'Failed to fetch watchlist' }, { status: 500 });
@@ -99,6 +145,9 @@ export async function POST(request) {
     }
 
     // Check if already in watchlist
+    // Note: Solana addresses are Base58 (case-sensitive), EVM addresses are hex (case-insensitive)
+    const normalizedAddress = chain === 'SOLANA' ? contractAddress : contractAddress?.toLowerCase();
+
     let existing = null;
     if (tokenId) {
       existing = await prisma.watchlistItem.findFirst({
@@ -108,7 +157,7 @@ export async function POST(request) {
       existing = await prisma.watchlistItem.findFirst({
         where: {
           userId: session.user.id,
-          contractAddress: contractAddress.toLowerCase(),
+          contractAddress: normalizedAddress,
           chain,
         },
       });
@@ -119,62 +168,95 @@ export async function POST(request) {
     }
 
     // If tokenId provided, verify it exists
+    let linkedToken = null;
     if (tokenId) {
-      const token = await prisma.token.findUnique({ where: { id: tokenId } });
-      if (!token) {
+      linkedToken = await prisma.token.findUnique({ where: { id: tokenId } });
+      if (!linkedToken) {
         return NextResponse.json({ error: 'Token not found' }, { status: 404 });
       }
     }
 
-    // If no symbol/name provided and we have a contract address, fetch from DexScreener
-    if (contractAddress && (!symbol || !name)) {
+    // Fetch token info from DexScreener if needed
+    let dexPair = null;
+    if (contractAddress) {
       try {
         console.log('Fetching token info from DexScreener for:', contractAddress);
         const dexData = await getTokenPairs(contractAddress);
-        const pair = dexData?.pairs?.[0];
+        dexPair = dexData?.pairs?.[0];
 
-        if (pair) {
-          // Get token info from the base token in the pair
-          const tokenInfo = pair.baseToken;
+        if (dexPair) {
+          const tokenInfo = dexPair.baseToken;
           if (tokenInfo) {
-            if (!symbol && tokenInfo.symbol) {
-              symbol = tokenInfo.symbol;
+            if (!symbol && tokenInfo.symbol) symbol = tokenInfo.symbol;
+            if (!name && tokenInfo.name) name = tokenInfo.name;
+            // Get correct address format from DexScreener
+            if (tokenInfo.address) {
+              contractAddress = tokenInfo.address;
             }
-            if (!name && tokenInfo.name) {
-              name = tokenInfo.name;
-            }
-            console.log('Extracted token info:', { symbol, name });
           }
+          console.log('Extracted token info:', { symbol, name, contractAddress });
         }
       } catch (error) {
         console.error('Failed to fetch token info from DexScreener:', error);
-        // Continue without the info - not a fatal error
       }
     }
 
-    // Build the data object - only include fields that have values
+    // If no tokenId, try to find or create a Token record
+    if (!tokenId && contractAddress && chain) {
+      // First, try to find existing token
+      linkedToken = await prisma.token.findFirst({
+        where: {
+          contractAddress: {
+            equals: contractAddress,
+            mode: 'insensitive',
+          },
+          chain,
+        },
+      });
+
+      // If no existing token, create one
+      if (!linkedToken) {
+        try {
+          linkedToken = await prisma.token.create({
+            data: {
+              contractAddress: contractAddress,
+              chain,
+              symbol: symbol || 'UNKNOWN',
+              name: name || 'Unknown Token',
+              decimals: dexPair?.baseToken?.decimals || 18,
+              totalSupply: dexPair?.baseToken?.totalSupply || null,
+            },
+          });
+          console.log('Created new Token record:', linkedToken.id);
+        } catch (error) {
+          // Token might have been created by another request, try to find it again
+          console.log('Failed to create token, trying to find existing:', error.message);
+          linkedToken = await prisma.token.findFirst({
+            where: {
+              contractAddress: {
+                equals: contractAddress,
+                mode: 'insensitive',
+              },
+              chain,
+            },
+          });
+        }
+      }
+    }
+
+    // Re-normalize address after potential update from DexScreener
+    const finalAddress = chain === 'SOLANA' ? contractAddress : contractAddress?.toLowerCase();
+
+    // Build the data object
     const createData = {
       userId: session.user.id,
+      tokenId: linkedToken?.id || null,
+      contractAddress: finalAddress,
+      chain,
+      symbol: symbol || null,
+      name: name || null,
+      notes: notes || null,
     };
-
-    if (tokenId) {
-      createData.tokenId = tokenId;
-    }
-    if (contractAddress) {
-      createData.contractAddress = contractAddress.toLowerCase();
-    }
-    if (chain) {
-      createData.chain = chain;
-    }
-    if (symbol) {
-      createData.symbol = symbol;
-    }
-    if (name) {
-      createData.name = name;
-    }
-    if (notes) {
-      createData.notes = notes;
-    }
 
     console.log('Creating watchlist item:', createData);
 
@@ -182,7 +264,18 @@ export async function POST(request) {
     const watchlistItem = await prisma.watchlistItem.create({
       data: createData,
       include: {
-        token: true,
+        token: {
+          include: {
+            vettingProcess: {
+              select: {
+                id: true,
+                overallScore: true,
+                riskLevel: true,
+                status: true,
+              },
+            },
+          },
+        },
       },
     });
 

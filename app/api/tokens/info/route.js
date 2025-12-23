@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import prisma from '@/lib/prisma';
 import { getTokenPairs } from '@/lib/api/dexscreener';
 import { getRugCheckReport, parseRugCheckData } from '@/lib/api/rugcheck';
 
@@ -27,6 +28,7 @@ export async function GET(request) {
       imageUrl: null,
     };
     let securityChecks = null;
+    let correctAddress = address; // Will be updated from DexScreener if available
 
     // Fetch from DexScreener for socials and description
     try {
@@ -38,14 +40,20 @@ export async function GET(request) {
         info.socials = pair.info.socials || [];
         info.imageUrl = pair.info.imageUrl || null;
       }
+
+      // Get the correct address format from DexScreener (important for Solana Base58 case sensitivity)
+      if (pair?.baseToken?.address) {
+        correctAddress = pair.baseToken.address;
+      }
     } catch (error) {
       console.error('Failed to fetch DexScreener info:', error);
     }
 
     // Fetch from RugCheck for Solana tokens
-    if (chain === 'SOLANA') {
+    // Use correctAddress from DexScreener which has proper Base58 case
+    if (chain?.toUpperCase() === 'SOLANA') {
       try {
-        const rawRugCheck = await getRugCheckReport(address);
+        const rawRugCheck = await getRugCheckReport(correctAddress);
         if (rawRugCheck) {
           const rugCheckData = parseRugCheckData(rawRugCheck);
 
@@ -59,13 +67,16 @@ export async function GET(request) {
             info.imageUrl = rawRugCheck.fileMeta.image;
           }
 
-          // Build security checks
+          // Get the score from parsed data (already normalized 0-1)
+          // parseRugCheckData already handles the score calculation
+          const rugcheckScore = rugCheckData.score;
+
           securityChecks = {
             mintAuthority: rugCheckData.checks?.MINT_AUTHORITY?.passed === false,
             freezeAuthority: rugCheckData.checks?.FREEZE_AUTHORITY?.passed === false,
             mutableMetadata: rugCheckData.checks?.MUTABLE_METADATA?.passed === false,
             lpLocked: rugCheckData.checks?.LP_LOCKED?.value || 0,
-            rugcheckScore: rawRugCheck.score_normalised ?? (rawRugCheck.score / 1000),
+            rugcheckScore: typeof rugcheckScore === 'number' && !isNaN(rugcheckScore) ? rugcheckScore : null,
             topHolderConcentration: rugCheckData.checks?.TOP_HOLDER_CONCENTRATION?.value || null,
           };
         }
@@ -74,9 +85,49 @@ export async function GET(request) {
       }
     }
 
+    // Look up existing token and vetting process in our database
+    let vettingData = null;
+    try {
+      const token = await prisma.token.findFirst({
+        where: {
+          contractAddress: {
+            equals: address,
+            mode: 'insensitive',
+          },
+          chain: chain?.toUpperCase(),
+        },
+        include: {
+          vettingProcess: {
+            select: {
+              id: true,
+              overallScore: true,
+              riskLevel: true,
+              status: true,
+              redFlags: { select: { id: true, flag: true, severity: true } },
+              greenFlags: { select: { id: true, flag: true } },
+            },
+          },
+        },
+      });
+
+      if (token?.vettingProcess) {
+        vettingData = {
+          vettingProcessId: token.vettingProcess.id,
+          overallScore: token.vettingProcess.overallScore,
+          riskLevel: token.vettingProcess.riskLevel,
+          status: token.vettingProcess.status,
+          redFlags: token.vettingProcess.redFlags || [],
+          greenFlags: token.vettingProcess.greenFlags || [],
+        };
+      }
+    } catch (error) {
+      console.error('Failed to fetch vetting data:', error);
+    }
+
     return NextResponse.json({
       info,
       securityChecks,
+      vettingData,
     });
   } catch (error) {
     console.error('Token info fetch error:', error);

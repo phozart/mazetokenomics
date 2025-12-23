@@ -20,7 +20,6 @@ import {
   Loader2,
   RefreshCw,
   Globe,
-  Twitter,
   MessageCircle,
   Send,
   FileText,
@@ -72,7 +71,12 @@ function StatCard({ label, value, icon: Icon }) {
 function SocialIcon({ type }) {
   switch (type) {
     case 'twitter':
-      return <Twitter className="w-4 h-4" />;
+      // X (formerly Twitter)
+      return (
+        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+        </svg>
+      );
     case 'telegram':
       return <Send className="w-4 h-4" />;
     case 'discord':
@@ -80,6 +84,82 @@ function SocialIcon({ type }) {
     default:
       return <Globe className="w-4 h-4" />;
   }
+}
+
+// Score Circle component
+function ScoreCircle({ overallScore, rugcheckScore, isLoading, chain }) {
+  // Priority: overallScore (from vetting) > rugcheckScore (from RugCheck API)
+  // Parse values to handle strings or other types
+  const parsedOverallScore = parseFloat(overallScore);
+  const parsedRugcheckScore = parseFloat(rugcheckScore);
+
+  const hasOverallScore = !isNaN(parsedOverallScore);
+  const hasRugcheckScore = !isNaN(parsedRugcheckScore);
+
+  // Calculate display score: use overallScore if available, otherwise rugcheckScore * 100
+  let displayScore = null;
+  let scoreSource = null;
+
+  if (hasOverallScore) {
+    displayScore = parsedOverallScore;
+    scoreSource = 'analysis';
+  } else if (hasRugcheckScore) {
+    displayScore = parsedRugcheckScore * 100;
+    scoreSource = 'rugcheck';
+  }
+
+
+  // Show loading state
+  if (isLoading && !hasOverallScore) {
+    return (
+      <div className="flex-shrink-0">
+        <div className="w-16 h-16 rounded-full flex flex-col items-center justify-center border-4 border-dark-border bg-dark-bg/50 animate-pulse">
+          <Loader2 className="w-5 h-5 animate-spin text-gray-500" />
+        </div>
+      </div>
+    );
+  }
+
+  // Show score if available
+  if (displayScore !== null) {
+    const scoreValue = Math.round(displayScore);
+    return (
+      <div className="flex-shrink-0">
+        <div className={`w-16 h-16 rounded-full flex flex-col items-center justify-center border-4 ${
+          scoreValue >= 70
+            ? 'border-green-500 bg-green-500/10'
+            : scoreValue >= 40
+            ? 'border-yellow-500 bg-yellow-500/10'
+            : 'border-red-500 bg-red-500/10'
+        }`}>
+          <span className={`text-xl font-bold ${
+            scoreValue >= 70
+              ? 'text-green-400'
+              : scoreValue >= 40
+              ? 'text-yellow-400'
+              : 'text-red-400'
+          }`}>
+            {scoreValue}
+          </span>
+          <span className="text-[10px] text-gray-500 -mt-0.5">score</span>
+        </div>
+      </div>
+    );
+  }
+
+  // For Solana tokens without any score, show N/A
+  if (chain?.toUpperCase() === 'SOLANA') {
+    return (
+      <div className="flex-shrink-0">
+        <div className="w-16 h-16 rounded-full flex flex-col items-center justify-center border-4 border-dark-border bg-dark-bg/30">
+          <span className="text-lg font-bold text-gray-500">N/A</span>
+          <span className="text-[10px] text-gray-500 -mt-0.5">score</span>
+        </div>
+      </div>
+    );
+  }
+
+  return null;
 }
 
 // Security check item
@@ -123,14 +203,23 @@ export function TokenDetailModal({
   greenFlagCount,
 }) {
   const [period, setPeriod] = useState('24h');
+  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'analysis'
   const [chartData, setChartData] = useState([]);
   const [chartLoading, setChartLoading] = useState(false);
   const [collecting, setCollecting] = useState(false);
   const [tokenInfo, setTokenInfo] = useState(null);
   const [securityChecks, setSecurityChecks] = useState(null);
+  const [vettingData, setVettingData] = useState(null);
   const [infoLoading, setInfoLoading] = useState(false);
 
   const chainConfig = CHAINS[chain];
+
+  // Use fetched vettingData if prop not provided
+  const effectiveVettingId = vettingProcessId || vettingData?.vettingProcessId;
+  const effectiveOverallScore = overallScore ?? vettingData?.overallScore;
+  const effectiveRiskLevel = riskLevel || vettingData?.riskLevel;
+  const effectiveRedFlags = vettingData?.redFlags || [];
+  const effectiveGreenFlags = vettingData?.greenFlags || [];
 
   // Fetch chart data when modal opens or period changes
   useEffect(() => {
@@ -164,11 +253,13 @@ export function TokenDetailModal({
       setInfoLoading(true);
       try {
         // Fetch from our token info API which gets DexScreener and RugCheck data
-        const response = await fetch(`/api/tokens/info?address=${encodeURIComponent(contractAddress)}&chain=${chain}`);
+        const url = `/api/tokens/info?address=${encodeURIComponent(contractAddress)}&chain=${chain}`;
+        const response = await fetch(url);
         if (response.ok) {
           const data = await response.json();
           setTokenInfo(data.info || null);
           setSecurityChecks(data.securityChecks || null);
+          setVettingData(data.vettingData || null);
         }
       } catch (error) {
         console.error('Failed to fetch token info:', error);
@@ -228,37 +319,19 @@ export function TokenDetailModal({
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-4">
             {/* Score Circle */}
-            {(overallScore !== null && overallScore !== undefined) || securityChecks?.rugcheckScore !== undefined ? (
-              <div className="flex-shrink-0">
-                <div className={`w-16 h-16 rounded-full flex flex-col items-center justify-center border-4 ${
-                  (overallScore ?? (securityChecks?.rugcheckScore * 100)) >= 70
-                    ? 'border-green-500 bg-green-500/10'
-                    : (overallScore ?? (securityChecks?.rugcheckScore * 100)) >= 40
-                    ? 'border-yellow-500 bg-yellow-500/10'
-                    : 'border-red-500 bg-red-500/10'
-                }`}>
-                  <span className={`text-xl font-bold ${
-                    (overallScore ?? (securityChecks?.rugcheckScore * 100)) >= 70
-                      ? 'text-green-400'
-                      : (overallScore ?? (securityChecks?.rugcheckScore * 100)) >= 40
-                      ? 'text-yellow-400'
-                      : 'text-red-400'
-                  }`}>
-                    {overallScore !== null && overallScore !== undefined
-                      ? Math.round(overallScore)
-                      : Math.round(securityChecks?.rugcheckScore * 100)}
-                  </span>
-                  <span className="text-[10px] text-gray-500 -mt-0.5">score</span>
-                </div>
-              </div>
-            ) : null}
+            <ScoreCircle
+              overallScore={effectiveOverallScore}
+              rugcheckScore={securityChecks?.rugcheckScore}
+              isLoading={infoLoading}
+              chain={chain}
+            />
             <div>
               <div className="flex items-center gap-3">
                 <h2 className="text-xl font-bold text-gray-100">
                   {symbol || 'Unknown'}
                 </h2>
                 <ChainBadge chain={chain} />
-                {riskLevel && <RiskBadge riskLevel={riskLevel} />}
+                {effectiveRiskLevel && <RiskBadge riskLevel={effectiveRiskLevel} />}
               </div>
               {name && (
                 <p className="text-sm text-gray-400 mt-1">{name}</p>
@@ -266,8 +339,8 @@ export function TokenDetailModal({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {vettingProcessId ? (
-              <Link href={`/tokens/${vettingProcessId}`}>
+            {effectiveVettingId ? (
+              <Link href={`/tokens/${effectiveVettingId}`}>
                 <Button variant="primary" size="sm" icon={Shield}>
                   View Analysis
                 </Button>
@@ -282,6 +355,35 @@ export function TokenDetailModal({
           </div>
         </div>
 
+        {/* Tab Toggle - Only show if we have analysis data */}
+        {effectiveVettingId && (
+          <div className="flex gap-1 p-1 bg-dark-bg/50 rounded-lg w-fit">
+            <button
+              onClick={() => setActiveTab('overview')}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                activeTab === 'overview'
+                  ? 'bg-brand-400/20 text-brand-400'
+                  : 'text-gray-400 hover:text-gray-200'
+              }`}
+            >
+              Overview
+            </button>
+            <button
+              onClick={() => setActiveTab('analysis')}
+              className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors ${
+                activeTab === 'analysis'
+                  ? 'bg-brand-400/20 text-brand-400'
+                  : 'text-gray-400 hover:text-gray-200'
+              }`}
+            >
+              Issues & Flags
+            </button>
+          </div>
+        )}
+
+        {/* Overview Tab Content */}
+        {activeTab === 'overview' && (
+          <>
         {/* Social Links */}
         {tokenInfo && (tokenInfo.socials?.length > 0 || tokenInfo.websites?.length > 0) && (
           <div className="flex flex-wrap items-center gap-2">
@@ -306,7 +408,7 @@ export function TokenDetailModal({
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-dark-bg/50 rounded-lg text-xs text-gray-300 hover:text-brand-400 hover:bg-dark-hover transition-colors"
               >
                 <SocialIcon type={social.type} />
-                {social.type?.charAt(0).toUpperCase() + social.type?.slice(1) || 'Social'}
+                {social.type === 'twitter' ? 'X' : (social.type?.charAt(0).toUpperCase() + social.type?.slice(1) || 'Social')}
               </a>
             ))}
           </div>
@@ -485,37 +587,80 @@ export function TokenDetailModal({
             </div>
           </div>
         )}
+          </>
+        )}
 
-        {/* Risk Summary (if analyzed) */}
-        {(vettingProcessId || overallScore !== undefined) && (
-          <div className="bg-dark-bg/30 rounded-lg p-4">
-            <h3 className="text-sm font-medium text-gray-300 mb-3">Risk Summary</h3>
-            <div className="flex items-center gap-4 flex-wrap">
-              <div className="flex items-center gap-2">
-                <span className="text-gray-400 text-sm">Score:</span>
-                <span className="text-xl font-bold text-gray-100">
-                  {overallScore !== null && overallScore !== undefined
-                    ? Math.round(overallScore)
-                    : '-'}
-                </span>
+        {/* Analysis Tab Content - Show flags and issues */}
+        {activeTab === 'analysis' && effectiveVettingId && (
+          <div className="space-y-4">
+            {/* Red Flags */}
+            {effectiveRedFlags.length > 0 && (
+              <div className="bg-red-500/5 border border-red-500/20 rounded-lg p-4">
+                <h3 className="text-sm font-medium text-red-400 mb-3 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4" />
+                  Red Flags ({effectiveRedFlags.length})
+                </h3>
+                <ul className="space-y-2">
+                  {effectiveRedFlags.map((flag) => (
+                    <li key={flag.id} className="flex items-start gap-2 text-sm">
+                      <X className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-300">{flag.flag}</span>
+                      {flag.severity && (
+                        <span className={`text-xs px-1.5 py-0.5 rounded ${
+                          flag.severity === 'CRITICAL' ? 'bg-red-500/20 text-red-400' :
+                          flag.severity === 'HIGH' ? 'bg-orange-500/20 text-orange-400' :
+                          'bg-yellow-500/20 text-yellow-400'
+                        }`}>
+                          {flag.severity}
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ul>
               </div>
-              {riskLevel && <RiskBadge riskLevel={riskLevel} />}
-              <div className="flex-1" />
-              <div className="flex items-center gap-3 text-sm">
-                {redFlagCount > 0 && (
-                  <div className="flex items-center gap-1 text-red-400">
-                    <AlertTriangle className="w-4 h-4" />
-                    <span>{redFlagCount} flags</span>
-                  </div>
-                )}
-                {greenFlagCount > 0 && (
-                  <div className="flex items-center gap-1 text-green-400">
-                    <CheckCircle className="w-4 h-4" />
-                    <span>{greenFlagCount} flags</span>
-                  </div>
-                )}
+            )}
+
+            {/* Green Flags */}
+            {effectiveGreenFlags.length > 0 && (
+              <div className="bg-green-500/5 border border-green-500/20 rounded-lg p-4">
+                <h3 className="text-sm font-medium text-green-400 mb-3 flex items-center gap-2">
+                  <Check className="w-4 h-4" />
+                  Green Flags ({effectiveGreenFlags.length})
+                </h3>
+                <ul className="space-y-2">
+                  {effectiveGreenFlags.map((flag) => (
+                    <li key={flag.id} className="flex items-start gap-2 text-sm">
+                      <Check className="w-4 h-4 text-green-400 mt-0.5 flex-shrink-0" />
+                      <span className="text-gray-300">{flag.flag}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </div>
+            )}
+
+            {/* No flags message */}
+            {effectiveRedFlags.length === 0 && effectiveGreenFlags.length === 0 && (
+              <div className="bg-dark-bg/30 rounded-lg p-6 text-center">
+                <Shield className="w-8 h-8 text-gray-500 mx-auto mb-2" />
+                <p className="text-gray-400 text-sm">No flags have been recorded yet.</p>
+                <Link href={`/tokens/${effectiveVettingId}`}>
+                  <Button variant="ghost" size="sm" className="mt-3">
+                    View Full Analysis
+                  </Button>
+                </Link>
+              </div>
+            )}
+
+            {/* Link to full analysis */}
+            {(effectiveRedFlags.length > 0 || effectiveGreenFlags.length > 0) && (
+              <div className="text-center pt-2">
+                <Link href={`/tokens/${effectiveVettingId}`}>
+                  <Button variant="ghost" size="sm" icon={Shield}>
+                    View Full Analysis Details
+                  </Button>
+                </Link>
+              </div>
+            )}
           </div>
         )}
       </div>
