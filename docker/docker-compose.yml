@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: maze-analytics-db
+    environment:
+      POSTGRES_USER: vetting
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-vetting_secret_123}
+      POSTGRES_DB: vetting_tool
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vetting"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - vetting-network
+
+  app:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: maze-analytics-app
+    environment:
+      DATABASE_URL: postgresql://vetting:${DB_PASSWORD:-vetting_secret_123}@postgres:5432/vetting_tool
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-maze-analytics-secret-key-change-in-production}
+      NEXTAUTH_URL: http://localhost:3001
+      ETHERSCAN_API_KEY: ${ETHERSCAN_API_KEY:-}
+      MORALIS_API_KEY: ${MORALIS_API_KEY:-}
+    ports:
+      - "3001:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - vetting-network
+
+volumes:
+  postgres_data:
+
+networks:
+  vetting-network:
+    driver: bridge

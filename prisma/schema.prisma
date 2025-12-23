@@ -1,0 +1,505 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String       @id @default(cuid())
+  email       String       @unique
+  name        String
+  password    String
+  role        Role         @default(USER)
+  isActive    Boolean      @default(true)
+  assignments Assignment[]
+  reviews     Review[]
+  activities  Activity[]
+  manualChecks ManualCheck[]
+  watchlist   WatchlistItem[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+enum Role {
+  ADMIN
+  USER
+  VIEWER
+}
+
+model Token {
+  id              String          @id @default(cuid())
+  contractAddress String
+  chain           Chain
+  name            String?
+  symbol          String?
+  decimals        Int?
+  totalSupply     String?
+  logoUrl         String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  vettingProcess  VettingProcess?
+  watchlistItems  WatchlistItem[]
+
+  @@unique([contractAddress, chain])
+}
+
+enum Chain {
+  ETHEREUM
+  BSC
+  POLYGON
+  ARBITRUM
+  BASE
+  OPTIMISM
+  AVALANCHE
+  SOLANA
+}
+
+model VettingProcess {
+  id                String            @id @default(cuid())
+  token             Token             @relation(fields: [tokenId], references: [id], onDelete: Cascade)
+  tokenId           String            @unique
+  status            VettingStatus     @default(PENDING)
+  priority          Priority          @default(NORMAL)
+  notes             String?
+
+  // Scores
+  automaticScore    Float?
+  manualScore       Float?
+  overallScore      Float?
+  riskLevel         RiskLevel?
+
+  // Timestamps
+  submittedAt       DateTime          @default(now())
+  startedAt         DateTime?
+  completedAt       DateTime?
+
+  // Relations
+  automaticChecks   AutomaticCheck[]
+  manualChecks      ManualCheck[]
+  assignments       Assignment[]
+  reviews           Review[]
+  activities        Activity[]
+  redFlags          RedFlag[]
+  greenFlags        GreenFlag[]
+  holderAnalysis    HolderAnalysis?
+
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+}
+
+enum VettingStatus {
+  PENDING
+  AUTO_RUNNING
+  AUTO_COMPLETE
+  IN_REVIEW
+  REVIEW_COMPLETE
+  APPROVED
+  REJECTED
+  FLAGGED
+}
+
+enum Priority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  EXTREME
+}
+
+model AutomaticCheck {
+  id               String         @id @default(cuid())
+  vettingProcess   VettingProcess @relation(fields: [vettingProcessId], references: [id], onDelete: Cascade)
+  vettingProcessId String
+
+  checkType        AutoCheckType
+  status           CheckStatus    @default(PENDING)
+  passed           Boolean?
+  score            Float?
+  severity         Severity
+
+  rawData          Json?
+  details          String?
+
+  checkedAt        DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@unique([vettingProcessId, checkType])
+}
+
+enum AutoCheckType {
+  // GoPlus Security Checks
+  HONEYPOT_DETECTION
+  BUY_TAX_ANALYSIS
+  SELL_TAX_ANALYSIS
+  MINT_FUNCTION
+  PROXY_CONTRACT
+  OWNER_CHANGE_CAPABILITY
+  TRADING_COOLDOWN
+  BLACKLIST_FUNCTION
+  HIDDEN_OWNER
+  EXTERNAL_CALL_RISK
+
+  // Etherscan Checks
+  CONTRACT_VERIFIED
+  CONTRACT_AGE
+  CREATOR_ANALYSIS
+
+  // DEXScreener Checks
+  LIQUIDITY_DEPTH
+  TRADING_VOLUME_24H
+  PRICE_IMPACT
+
+  // Holder Checks
+  HOLDER_COUNT
+  TOP_HOLDER_CONCENTRATION
+  WHALE_DISTRIBUTION
+
+  // Solana-Specific Checks (RugCheck)
+  MINT_AUTHORITY
+  FREEZE_AUTHORITY
+  LP_LOCKED
+  MUTABLE_METADATA
+  RUGCHECK_SCORE
+
+  // Solana-Specific Checks (Jupiter)
+  JUPITER_VERIFIED
+
+  // Social/Presence Checks
+  HAS_TWITTER
+  HAS_TELEGRAM
+  HAS_WEBSITE
+  SOCIAL_SCORE
+
+  // Advanced Holder Analysis - Basic
+  TOP_HOLDER_WALLET_AGE
+  CONNECTED_WALLETS
+  WASH_TRADING_DETECTION
+
+  // Advanced Holder Analysis - Concentration
+  GINI_COEFFICIENT
+  NAKAMOTO_COEFFICIENT
+  EFFECTIVE_HOLDER_COUNT
+
+  // Advanced Holder Analysis - Risk Scores
+  SYBIL_SCORE
+  INSIDER_SCORE
+  EXIT_RISK_SCORE
+  SMART_MONEY_RATIO
+
+  // Advanced Holder Analysis - Temporal
+  COORDINATED_BUYING
+  SNIPER_ACTIVITY
+  HOLDING_DURATIONS
+
+  // Advanced Holder Analysis - Funding Chain
+  FUNDING_CHAIN_DEPTH
+}
+
+enum Severity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum CheckStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  SKIPPED
+}
+
+model ManualCheck {
+  id               String         @id @default(cuid())
+  vettingProcess   VettingProcess @relation(fields: [vettingProcessId], references: [id], onDelete: Cascade)
+  vettingProcessId String
+
+  checkType        ManualCheckType
+  status           CheckStatus    @default(PENDING)
+  passed           Boolean?
+  score            Float?
+  severity         Severity
+
+  notes            String?
+  evidenceUrls     String[]
+
+  reviewer         User?          @relation(fields: [reviewerId], references: [id])
+  reviewerId       String?
+
+  reviewedAt       DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@unique([vettingProcessId, checkType])
+}
+
+enum ManualCheckType {
+  TEAM_KYC
+  AUDIT_REVIEW
+  TOKENOMICS_ANALYSIS
+  WHITEPAPER_REVIEW
+  ROADMAP_ASSESSMENT
+  COMMUNITY_ANALYSIS
+  PARTNERSHIP_VERIFICATION
+  LEGAL_COMPLIANCE
+  LIQUIDITY_LOCK_VERIFY
+  HISTORICAL_BEHAVIOR
+}
+
+model Assignment {
+  id               String            @id @default(cuid())
+  vettingProcess   VettingProcess    @relation(fields: [vettingProcessId], references: [id], onDelete: Cascade)
+  vettingProcessId String
+
+  user             User              @relation(fields: [userId], references: [id])
+  userId           String
+
+  checkTypes       ManualCheckType[]
+  status           AssignmentStatus  @default(ASSIGNED)
+
+  assignedAt       DateTime          @default(now())
+  dueAt            DateTime?
+  completedAt      DateTime?
+
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+}
+
+enum AssignmentStatus {
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  REASSIGNED
+}
+
+model Review {
+  id               String         @id @default(cuid())
+  vettingProcess   VettingProcess @relation(fields: [vettingProcessId], references: [id], onDelete: Cascade)
+  vettingProcessId String
+
+  reviewer         User           @relation(fields: [reviewerId], references: [id])
+  reviewerId       String
+
+  type             ReviewType
+  decision         ReviewDecision
+  comments         String?
+
+  createdAt        DateTime       @default(now())
+}
+
+enum ReviewType {
+  MANUAL_CHECK_REVIEW
+  FINAL_APPROVAL
+  ESCALATION
+}
+
+enum ReviewDecision {
+  APPROVE
+  REJECT
+  REQUEST_CHANGES
+  ESCALATE
+}
+
+model RedFlag {
+  id               String         @id @default(cuid())
+  vettingProcess   VettingProcess @relation(fields: [vettingProcessId], references: [id], onDelete: Cascade)
+  vettingProcessId String
+
+  flag             String
+  severity         Severity
+  source           String
+  checkType        String?
+
+  createdAt        DateTime       @default(now())
+}
+
+model GreenFlag {
+  id               String         @id @default(cuid())
+  vettingProcess   VettingProcess @relation(fields: [vettingProcessId], references: [id], onDelete: Cascade)
+  vettingProcessId String
+
+  flag             String
+  source           String
+
+  createdAt        DateTime       @default(now())
+}
+
+model Activity {
+  id               String          @id @default(cuid())
+  vettingProcess   VettingProcess? @relation(fields: [vettingProcessId], references: [id], onDelete: Cascade)
+  vettingProcessId String?
+
+  user             User?           @relation(fields: [userId], references: [id])
+  userId           String?
+
+  action           String
+  details          Json?
+
+  createdAt        DateTime        @default(now())
+}
+
+// ============================================================================
+// ADVANCED HOLDER ANALYSIS MODELS
+// ============================================================================
+
+model HolderAnalysis {
+  id                    String          @id @default(cuid())
+  vettingProcess        VettingProcess  @relation(fields: [vettingProcessId], references: [id], onDelete: Cascade)
+  vettingProcessId      String          @unique
+
+  // Concentration Metrics
+  giniCoefficient       Float?
+  nakamotoCoefficient   Int?
+  effectiveHolders      Int?
+  top10Percent          Float?
+  top50Percent          Float?
+  top100Percent         Float?
+
+  // Risk Scores (0-100)
+  sybilScore            Float?
+  insiderScore          Float?
+  exitRiskScore         Float?
+  smartMoneyRatio       Float?
+
+  // Temporal Metrics
+  coordinatedBuyingPct  Float?
+  sniperWalletCount     Int?
+  avgHoldingDuration    Float?
+  diamondHandsRatio     Float?
+  paperHandsRatio       Float?
+
+  // Cluster Analysis
+  clusterCount          Int?
+  suspiciousClusterCount Int?
+  largestClusterSize    Int?
+
+  // Network Graph Metrics
+  graphDensity          Float?
+  hubWalletCount        Int?
+
+  // Raw Data (JSON storage for complex structures)
+  fundingGraph          Json?           // Full graph with nodes, edges, hubs
+  clusters              Json?           // Cluster definitions and members
+  topHoldersDetailed    Json?           // Extended holder data with traces
+
+  // Status
+  status                AnalysisStatus  @default(PENDING)
+
+  // Relations
+  walletTraces          WalletTrace[]
+
+  analyzedAt            DateTime?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+}
+
+enum AnalysisStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+model WalletTrace {
+  id                    String          @id @default(cuid())
+  holderAnalysis        HolderAnalysis  @relation(fields: [holderAnalysisId], references: [id], onDelete: Cascade)
+  holderAnalysisId      String
+
+  // Wallet Identification
+  walletAddress         String
+  chain                 Chain
+  label                 String?         // Known label if identified
+  walletType            WalletType      @default(UNKNOWN)
+
+  // Holdings
+  balance               Float?
+  percentage            Float?
+  rank                  Int?
+
+  // Wallet Age
+  firstTxDate           DateTime?
+  ageInDays             Int?
+
+  // Funding Chain (JSON - array of funding hops)
+  fundingChain          Json?
+  fundingDepth          Int?
+  primaryFundingSource  String?         // Address of immediate funder
+  fundingSourceType     String?         // exchange, mixer, contract, unknown
+
+  // Cluster Membership
+  clusterId             String?
+
+  // Risk Flags (JSON - array of {type, severity, description})
+  riskFlags             Json?
+  riskFlagCount         Int             @default(0)
+  hasCriticalFlag       Boolean         @default(false)
+
+  // Reputation Indicators
+  knownScamAssociation  Boolean         @default(false)
+  smartMoneyScore       Float?
+  historicalRugPulls    Int             @default(0)
+
+  // Transaction Patterns
+  transactionCount      Int?
+  avgTradeSize          Float?
+  preferredDexes        String[]
+
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  @@index([holderAnalysisId])
+  @@index([walletAddress, chain])
+  @@index([clusterId])
+}
+
+enum WalletType {
+  INDIVIDUAL
+  EXCHANGE
+  INSTITUTION
+  FOUNDATION
+  CONTRACT
+  DEX
+  MIXER
+  UNKNOWN
+}
+
+// ============================================================================
+// WATCHLIST FEATURE
+// ============================================================================
+
+model WatchlistItem {
+  id              String    @id @default(cuid())
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String
+
+  // Token can be from our analyzed tokens OR external (just contract address)
+  token           Token?    @relation(fields: [tokenId], references: [id], onDelete: Cascade)
+  tokenId         String?
+
+  // For tokens not in our system yet (external tracking)
+  contractAddress String?
+  chain           Chain?
+  symbol          String?
+  name            String?
+
+  // User customization
+  notes           String?
+
+  addedAt         DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([userId, tokenId])
+  @@unique([userId, contractAddress, chain])
+  @@index([userId])
+}

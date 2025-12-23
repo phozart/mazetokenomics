@@ -1,0 +1,128 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <defs>
+    <!-- Main gradient for the maze paths -->
+    <linearGradient id="mazeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8B5CF6"/>
+      <stop offset="50%" style="stop-color:#A78BFA"/>
+      <stop offset="100%" style="stop-color:#06B6D4"/>
+    </linearGradient>
+
+    <!-- Glow filter for the cosmic effect -->
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Outer glow -->
+    <filter id="outerGlow" x="-100%" y="-100%" width="300%" height="300%">
+      <feGaussianBlur stdDeviation="20" result="blur"/>
+      <feFlood flood-color="#8B5CF6" flood-opacity="0.6"/>
+      <feComposite in2="blur" operator="in"/>
+      <feMerge>
+        <feMergeNode/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Radial gradient for center token -->
+    <radialGradient id="tokenGradient" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#C4B5FD"/>
+      <stop offset="100%" style="stop-color:#8B5CF6"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background circle with subtle glow -->
+  <circle cx="256" cy="256" r="240" fill="#0D0D1A" filter="url(#outerGlow)"/>
+
+  <!-- Outer maze ring -->
+  <g filter="url(#glow)">
+    <!-- Outer square maze border -->
+    <path d="M96 96 L416 96 L416 416 L96 416 Z"
+          fill="none"
+          stroke="url(#mazeGradient)"
+          stroke-width="12"
+          stroke-linecap="round"/>
+
+    <!-- Maze paths - creating a labyrinth pattern -->
+    <!-- Top section -->
+    <path d="M96 160 L320 160"
+          fill="none"
+          stroke="url(#mazeGradient)"
+          stroke-width="10"
+          stroke-linecap="round"/>
+    <path d="M192 96 L192 160"
+          fill="none"
+          stroke="url(#mazeGradient)"
+          stroke-width="10"
+          stroke-linecap="round"/>
+
+    <!-- Right section -->
+    <path d="M352 160 L352 320"
+          fill="none"
+          stroke="url(#mazeGradient)"
+          stroke-width="10"
+          stroke-linecap="round"/>
+    <path d="M352 224 L416 224"
+          fill="none"
+          stroke="url(#mazeGradient)"
+          stroke-width="10"
+          stroke-linecap="round"/>
+
+    <!-- Bottom section -->
+    <path d="M192 352 L416 352"
+          fill="none"
+          stroke="url(#mazeGradient)"
+          stroke-width="10"
+          stroke-linecap="round"/>
+    <path d="M320 352 L320 416"
+          fill="none"
+          stroke="url(#mazeGradient)"
+          stroke-width="10"
+          stroke-linecap="round"/>
+
+    <!-- Left section -->
+    <path d="M160 192 L160 352"
+          fill="none"
+          stroke="url(#mazeGradient)"
+          stroke-width="10"
+          stroke-linecap="round"/>
+    <path d="M96 288 L160 288"
+          fill="none"
+          stroke="url(#mazeGradient)"
+          stroke-width="10"
+          stroke-linecap="round"/>
+
+    <!-- Inner maze paths -->
+    <path d="M224 224 L288 224 L288 288 L224 288 Z"
+          fill="none"
+          stroke="url(#mazeGradient)"
+          stroke-width="10"
+          stroke-linecap="round"/>
+
+    <!-- Connecting paths to center -->
+    <path d="M224 256 L160 256"
+          fill="none"
+          stroke="url(#mazeGradient)"
+          stroke-width="8"
+          stroke-linecap="round"
+          opacity="0.8"/>
+    <path d="M288 256 L352 256"
+          fill="none"
+          stroke="url(#mazeGradient)"
+          stroke-width="8"
+          stroke-linecap="round"
+          opacity="0.8"/>
+  </g>
+
+  <!-- Center token/coin symbol -->
+  <circle cx="256" cy="256" r="32" fill="url(#tokenGradient)" filter="url(#glow)"/>
+  <text x="256" y="268"
+        font-family="Arial, sans-serif"
+        font-size="32"
+        font-weight="bold"
+        fill="#0D0D1A"
+        text-anchor="middle">M</text>
+</svg>

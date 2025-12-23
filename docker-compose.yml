@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: maze-tokenomics-db
+    environment:
+      POSTGRES_USER: vetting
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-vetting_secret_123}
+      POSTGRES_DB: vetting_tool
+    volumes:
+      - maze_postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vetting -d vetting_tool"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - maze-network
+    restart: unless-stopped
+
+  maze-tokenomics:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: maze-tokenomics-app
+    environment:
+      DATABASE_URL: postgresql://vetting:${DB_PASSWORD:-vetting_secret_123}@postgres:5432/vetting_tool
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-maze-tokenomics-secret-key-change-in-production}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3003}
+      ETHERSCAN_API_KEY: ${ETHERSCAN_API_KEY:-}
+      MORALIS_API_KEY: ${MORALIS_API_KEY:-}
+      HELIUS_API_KEY: ${HELIUS_API_KEY:-}
+    ports:
+      - "3003:3003"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - maze-network
+    restart: unless-stopped
+
+volumes:
+  maze_postgres_data:
+
+networks:
+  maze-network:
+    driver: bridge
