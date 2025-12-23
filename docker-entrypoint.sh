@@ -1,8 +1,5 @@
 #!/bin/sh
 set -e
 
-echo "Initializing database..."
-node prisma/init-db.js
-
-echo "Starting application..."
+echo "Starting Maze Tokenomics..."
 exec node server.js
