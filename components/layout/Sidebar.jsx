@@ -10,7 +10,6 @@ import {
   Users,
   FileText,
   Settings,
-  Sparkles,
   Plus,
   LogOut,
   Star,
@@ -39,9 +38,7 @@ export function Sidebar({ user }) {
         <Link href="/" className="flex items-center gap-3 group">
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-r from-brand-500 to-accent-400 rounded-lg blur-md opacity-50 group-hover:opacity-75 transition-opacity" />
-            <div className="relative w-9 h-9 bg-gradient-to-br from-brand-500 to-accent-400 rounded-lg flex items-center justify-center">
-              <Sparkles className="w-5 h-5 text-white" />
-            </div>
+            <img src="/favicon.svg" alt="Maze" className="relative w-9 h-9" />
           </div>
           <div>
             <span className="text-xl font-bold cosmic-text">Maze</span>
