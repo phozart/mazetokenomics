@@ -58,14 +58,6 @@ export default function HomePage() {
     }
   }, [watchlist.length, fetchPrices]);
 
-  // Auto-refresh prices every 30 seconds
-  useEffect(() => {
-    if (watchlist.length === 0) return;
-
-    const interval = setInterval(fetchPrices, 30000);
-    return () => clearInterval(interval);
-  }, [watchlist.length, fetchPrices]);
-
   const handleRemove = async (id) => {
     try {
       const response = await fetch(`/api/watchlist/${id}`, {
@@ -145,8 +137,6 @@ export default function HomePage() {
         {lastUpdated && watchlist.length > 0 && (
           <div className="text-xs sm:text-sm text-gray-500 text-center">
             Last updated: {lastUpdated.toLocaleTimeString()}
-            {' · '}
-            <span className="text-gray-600">Auto-refresh every 30s</span>
           </div>
         )}
       </div>

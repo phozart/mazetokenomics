@@ -1,12 +1,34 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { User, Lock, AlertCircle, Loader2 } from 'lucide-react';
+import { User, Lock, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import Image from 'next/image';
+
+function generateChallenge() {
+  const operations = ['+', '-', '×'];
+  const op = operations[Math.floor(Math.random() * operations.length)];
+  let num1, num2, answer;
+
+  if (op === '+') {
+    num1 = Math.floor(Math.random() * 20) + 1;
+    num2 = Math.floor(Math.random() * 20) + 1;
+    answer = num1 + num2;
+  } else if (op === '-') {
+    num1 = Math.floor(Math.random() * 20) + 10;
+    num2 = Math.floor(Math.random() * 10) + 1;
+    answer = num1 - num2;
+  } else {
+    num1 = Math.floor(Math.random() * 10) + 1;
+    num2 = Math.floor(Math.random() * 10) + 1;
+    answer = num1 * num2;
+  }
+
+  return { question: `${num1} ${op} ${num2}`, answer };
+}
 
 function LoginForm() {
   const router = useRouter();
@@ -17,10 +39,28 @@ function LoginForm() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [challenge, setChallenge] = useState({ question: '', answer: 0 });
+  const [captchaAnswer, setCaptchaAnswer] = useState('');
+
+  const refreshChallenge = useCallback(() => {
+    setChallenge(generateChallenge());
+    setCaptchaAnswer('');
+  }, []);
+
+  useEffect(() => {
+    refreshChallenge();
+  }, [refreshChallenge]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    if (parseInt(captchaAnswer, 10) !== challenge.answer) {
+      setError('Incorrect answer. Please try again.');
+      refreshChallenge();
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -32,13 +72,15 @@ function LoginForm() {
       });
 
       if (result?.error) {
-        setError('Invalid email or password');
+        setError('Invalid username or password');
+        refreshChallenge();
       } else if (result?.ok) {
         router.push(callbackUrl);
         router.refresh();
       }
     } catch (err) {
       setError('An error occurred. Please try again.');
+      refreshChallenge();
     } finally {
       setIsLoading(false);
     }
@@ -74,6 +116,33 @@ function LoginForm() {
         required
         autoComplete="current-password"
       />
+
+      <div className="p-3 bg-dark-bg/50 rounded-lg border border-dark-border">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs text-gray-400">Verify you are human</span>
+          <button
+            type="button"
+            onClick={refreshChallenge}
+            className="p-1 text-gray-400 hover:text-brand-400 transition-colors"
+            title="New challenge"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-gray-300 font-mono bg-dark-card px-3 py-2 rounded">
+            {challenge.question} = ?
+          </span>
+          <input
+            type="number"
+            value={captchaAnswer}
+            onChange={(e) => setCaptchaAnswer(e.target.value)}
+            placeholder="Answer"
+            className="flex-1 px-3 py-2 bg-dark-card border border-dark-border rounded text-sm text-white placeholder-gray-500 focus:outline-none focus:border-brand-500"
+            required
+          />
+        </div>
+      </div>
 
       <Button
         type="submit"
@@ -127,17 +196,6 @@ export default function LoginPage() {
           <Suspense fallback={<LoginFormFallback />}>
             <LoginForm />
           </Suspense>
-
-          {/* Credentials hint */}
-          <div className="mt-6 p-4 bg-dark-bg/50 rounded-lg border border-brand-500/10">
-            <p className="text-xs text-brand-300 mb-2">Default Login:</p>
-            <p className="text-xs text-gray-400">
-              <span className="text-gray-500">Username:</span> maze
-            </p>
-            <p className="text-xs text-gray-400">
-              <span className="text-gray-500">Password:</span> maze
-            </p>
-          </div>
         </div>
 
         <p className="text-center text-sm text-gray-500 mt-6">
