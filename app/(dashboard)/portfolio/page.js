@@ -160,13 +160,13 @@ export default function PortfolioPage() {
         return;
       }
 
-      // Fetch token metadata and prices from Jupiter
+      // Fetch token metadata and prices
       const mints = tokens.map(t => t.mint).join(',');
 
-      // Fetch prices from Jupiter Price API
+      // Fetch prices from our API (uses Jupiter if API key set, otherwise DexScreener)
       let priceData = { data: {} };
       try {
-        const priceResponse = await fetch(`https://api.jup.ag/price/v2?ids=${mints}`);
+        const priceResponse = await fetch(`/api/prices/tokens?ids=${mints}`);
         if (priceResponse.ok) {
           priceData = await priceResponse.json();
         }
