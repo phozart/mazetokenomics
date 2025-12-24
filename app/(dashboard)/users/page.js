@@ -115,8 +115,8 @@ function UserForm({ user, onSubmit, onCancel, isLoading, isEdit }) {
       return;
     }
 
-    if (formData.password && formData.password.length < 4) {
-      setError('Password must be at least 4 characters');
+    if (formData.password && formData.password.length < 8) {
+      setError('Password must be at least 8 characters');
       return;
     }
 
@@ -209,8 +209,8 @@ function ResetPasswordForm({ user, onSubmit, onCancel, isLoading }) {
       return;
     }
 
-    if (formData.password.length < 4) {
-      setError('Password must be at least 4 characters');
+    if (formData.password.length < 8) {
+      setError('Password must be at least 8 characters');
       return;
     }
 

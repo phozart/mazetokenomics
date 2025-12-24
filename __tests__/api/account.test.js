@@ -131,8 +131,8 @@ describe('/api/account', () => {
         method: 'POST',
         body: JSON.stringify({
           currentPassword: 'oldpassword',
-          newPassword: '123',
-          confirmPassword: '123',
+          newPassword: '1234567',
+          confirmPassword: '1234567',
         }),
       });
 
@@ -140,7 +140,7 @@ describe('/api/account', () => {
       const data = await response.json();
 
       expect(response.status).toBe(400);
-      expect(data.error).toBe('Password must be at least 4 characters');
+      expect(data.error).toBe('Password must be at least 8 characters');
     });
   });
 });

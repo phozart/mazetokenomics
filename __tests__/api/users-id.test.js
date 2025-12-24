@@ -206,13 +206,28 @@ describe('Users [id] API', () => {
 
       const request = {
         url: 'http://localhost:3003/api/users/123',
-        json: async () => ({ password: 'newpass', confirmPassword: 'different' }),
+        json: async () => ({ password: 'newpassword123', confirmPassword: 'different123' }),
       };
       const response = await PATCH(request, { params: Promise.resolve({ id: '123' }) });
       const data = await response.json();
 
       expect(response.status).toBe(400);
       expect(data.error).toBe('Passwords do not match');
+    });
+
+    it('should return 400 if password too short', async () => {
+      getSession.mockResolvedValue(mockAdminSession);
+      prisma.user.findUnique.mockResolvedValue({ id: '123' });
+
+      const request = {
+        url: 'http://localhost:3003/api/users/123',
+        json: async () => ({ password: 'short', confirmPassword: 'short' }),
+      };
+      const response = await PATCH(request, { params: Promise.resolve({ id: '123' }) });
+      const data = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(data.error).toBe('Password must be at least 8 characters');
     });
   });
 

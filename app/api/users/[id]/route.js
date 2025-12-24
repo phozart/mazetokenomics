@@ -114,9 +114,9 @@ export async function PATCH(request, { params }) {
         );
       }
 
-      if (password.length < 4) {
+      if (password.length < 8) {
         return NextResponse.json(
-          { error: 'Password must be at least 4 characters' },
+          { error: 'Password must be at least 8 characters' },
           { status: 400 }
         );
       }

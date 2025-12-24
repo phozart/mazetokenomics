@@ -7,23 +7,26 @@ async function main() {
   console.log('Seeding database...');
 
   // Create admin user (single user mode)
-  const adminPassword = await bcrypt.hash('maze', 12);
+  // Password should be changed immediately after first login in production
+  const defaultPassword = process.env.ADMIN_DEFAULT_PASSWORD || 'ChangeMe123!';
+  const adminPassword = await bcrypt.hash(defaultPassword, 12);
+  console.log('Admin password set from:', process.env.ADMIN_DEFAULT_PASSWORD ? 'ADMIN_DEFAULT_PASSWORD env var' : 'default (ChangeMe123!)');
 
   // Delete old user if exists with different email
   await prisma.user.deleteMany({
     where: {
-      email: { in: ['maze@maze.com', 'admin@byrrgis.com'] }
+      email: { in: ['maze@maze.com', 'admin@byrrgis.com', 'maze'] }
     }
   });
 
   const admin = await prisma.user.upsert({
-    where: { email: 'maze' },
+    where: { email: 'admin' },
     update: {
       password: adminPassword,
       role: 'ADMIN',
     },
     create: {
-      email: 'maze',
+      email: 'admin',
       name: 'Admin',
       password: adminPassword,
       role: 'ADMIN',

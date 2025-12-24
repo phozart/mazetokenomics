@@ -92,7 +92,7 @@ async function seedDatabase() {
 
   // Check if admin user exists
   const existingUser = await prisma.user.findUnique({
-    where: { email: 'maze' }
+    where: { email: 'admin' }
   });
 
   if (existingUser) {
@@ -101,17 +101,20 @@ async function seedDatabase() {
   }
 
   // Create admin user
-  const adminPassword = await bcrypt.hash('maze', 12);
+  // Password should be changed immediately after first login in production
+  const defaultPassword = process.env.ADMIN_DEFAULT_PASSWORD || 'ChangeMe123!';
+  const adminPassword = await bcrypt.hash(defaultPassword, 12);
   await prisma.user.create({
     data: {
-      email: 'maze',
+      email: 'admin',
       name: 'Admin',
       password: adminPassword,
       role: 'ADMIN',
     },
   });
 
-  console.log('Created admin user: maze / maze');
+  console.log('Created admin user: admin / [password from ADMIN_DEFAULT_PASSWORD env var or "ChangeMe123!"]');
+  console.log('IMPORTANT: Change the admin password immediately after first login!');
 }
 
 async function main() {

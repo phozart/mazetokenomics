@@ -66,8 +66,8 @@ export default function AccountPage() {
       return;
     }
 
-    if (formData.newPassword.length < 4) {
-      showMessage('error', 'Password must be at least 4 characters');
+    if (formData.newPassword.length < 8) {
+      showMessage('error', 'Password must be at least 8 characters');
       return;
     }
 

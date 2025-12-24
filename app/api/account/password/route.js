@@ -29,10 +29,10 @@ export async function POST(request) {
       );
     }
 
-    // Validate password length
-    if (newPassword.length < 4) {
+    // Validate password length (minimum 8 characters for security)
+    if (newPassword.length < 8) {
       return NextResponse.json(
-        { error: 'Password must be at least 4 characters' },
+        { error: 'Password must be at least 8 characters' },
         { status: 400 }
       );
     }
