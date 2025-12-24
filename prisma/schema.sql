@@ -270,6 +270,7 @@ CREATE TABLE "WatchlistItem" (
     "symbol" TEXT,
     "name" TEXT,
     "notes" TEXT,
+    "sortOrder" INTEGER NOT NULL DEFAULT 0,
     "addedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
 
@@ -305,6 +306,9 @@ CREATE INDEX "WalletTrace_clusterId_idx" ON "WalletTrace"("clusterId");
 
 -- CreateIndex
 CREATE INDEX "WatchlistItem_userId_idx" ON "WatchlistItem"("userId");
+
+-- CreateIndex
+CREATE INDEX "WatchlistItem_userId_sortOrder_idx" ON "WatchlistItem"("userId", "sortOrder");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "WatchlistItem_userId_tokenId_key" ON "WatchlistItem"("userId", "tokenId");

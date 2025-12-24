@@ -30,8 +30,8 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Install OpenSSL for Prisma runtime
-RUN apk add --no-cache openssl
+# Install OpenSSL for Prisma runtime and postgresql-client for schema initialization
+RUN apk add --no-cache openssl postgresql-client
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs

@@ -12,24 +12,74 @@ async function initDatabase() {
   const schemaPath = path.join(__dirname, 'schema.sql');
   const schemaSql = fs.readFileSync(schemaPath, 'utf8');
 
-  // Split into statements and execute each one
-  const statements = schemaSql
-    .split(';')
-    .map(s => s.trim())
-    .filter(s => s.length > 0 && !s.startsWith('--'));
+  // Split into statements - split on semicolon, then clean up
+  const rawStatements = schemaSql.split(';');
+  console.log(`Raw split: ${rawStatements.length} parts`);
 
-  for (const statement of statements) {
+  const statements = rawStatements
+    .map(s => {
+      // Remove leading comment lines and whitespace
+      const lines = s.split('\n');
+      const sqlLines = lines.filter(line => !line.trim().startsWith('--'));
+      return sqlLines.join('\n').trim();
+    })
+    .filter(s => s.length > 0)
+    .filter(s => s.match(/^(CREATE|ALTER)/i)); // Only SQL statements
+
+  console.log(`Found ${statements.length} SQL statements to execute`);
+  if (statements.length < 10) {
+    console.log('First 3 statements:', statements.slice(0, 3).map(s => s.substring(0, 80)));
+  }
+
+  let executed = 0;
+  let skipped = 0;
+  let failed = [];
+
+  for (let i = 0; i < statements.length; i++) {
+    const statement = statements[i];
+    const preview = statement.replace(/\s+/g, ' ').substring(0, 60);
+
     try {
       await prisma.$executeRawUnsafe(statement);
+      executed++;
     } catch (error) {
+      const errCode = error.meta?.code || error.code;
+      const errMsg = error.meta?.message || error.message;
+
       // Ignore "already exists" errors
-      if (error.message.includes('already exists') ||
-          error.code === '42P07' || // duplicate table
-          error.code === '42710') { // duplicate object
-        console.log(`Skipped (already exists): ${statement.substring(0, 50)}...`);
+      if (errMsg.includes('already exists') ||
+          errCode === '42P07' || // duplicate table
+          errCode === '42710' || // duplicate object
+          errCode === '42701') { // duplicate column
+        skipped++;
       } else {
-        console.error(`Error executing: ${statement.substring(0, 100)}...`);
-        throw error;
+        // For other errors on indexes/constraints, skip but log
+        if (statement.includes('CREATE INDEX') || statement.includes('ADD CONSTRAINT')) {
+          console.warn(`Warning: ${preview}... - ${errCode}: ${errMsg}`);
+          failed.push({ statement: preview, error: errMsg });
+        } else {
+          console.error(`Error: ${preview}...`);
+          console.error(`Details: ${errCode} - ${errMsg}`);
+          throw error;
+        }
+      }
+    }
+  }
+
+  console.log(`Schema applied: ${executed} executed, ${skipped} skipped (already exist)`);
+  if (failed.length > 0) {
+    console.log(`${failed.length} statements had warnings (indexes/constraints on missing tables - will retry)`);
+
+    // Retry failed index/constraint statements
+    for (const item of failed) {
+      try {
+        const stmt = statements.find(s => s.includes(item.statement.substring(0, 30)));
+        if (stmt) {
+          await prisma.$executeRawUnsafe(stmt);
+          console.log(`Retry successful: ${item.statement.substring(0, 40)}...`);
+        }
+      } catch (error) {
+        // Ignore on retry
       }
     }
   }

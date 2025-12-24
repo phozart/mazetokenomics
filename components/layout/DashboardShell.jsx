@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils';
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
   ListTodo,
@@ -26,31 +26,34 @@ import {
   Plus,
   Shield,
   Scale,
-} from 'lucide-react';
-import { signOut } from 'next-auth/react';
-import Image from 'next/image';
-import { WalletProvider } from '@/components/wallet';
-import { WaveBackground } from '@/components/ui/WaveBackground';
+} from "lucide-react";
+import { signOut } from "next-auth/react";
+import Image from "next/image";
+import { WalletProvider } from "@/components/wallet";
+import { WaveBackground } from "@/components/ui/WaveBackground";
+import { Avatar } from "@/components/ui/Avatar";
 
 const navigation = [
-  { name: 'Watchlist', href: '/', icon: Star },
-  { name: 'Token Analysis', href: '/analysis', icon: Shield },
-  { name: 'Trading', href: '/trading', icon: ArrowLeftRight },
-  { name: 'Packs', href: '/packs', icon: Package },
-  { name: 'Help', href: '/help', icon: HelpCircle },
+  { name: "Watchlist", href: "/", icon: Star },
+  { name: "Token Analysis", href: "/analysis", icon: Shield },
+  { name: "Trading", href: "/trading", icon: ArrowLeftRight },
+  { name: "Packs", href: "/packs", icon: Package },
+  { name: "Help", href: "/help", icon: HelpCircle },
 ];
 
-const adminNavigation = [
-  { name: 'Users', href: '/users', icon: Users },
-];
+const adminNavigation = [{ name: "Users", href: "/users", icon: Users }];
 
 const quickActions = [
-  { name: 'Add to Watchlist', href: '/?action=add', icon: Plus },
-  { name: 'Analyze Token', href: '/analysis?action=new', icon: Search },
-  { name: 'Quick Trade', href: '/trading', icon: ArrowLeftRight },
-  { name: 'Create Pack', href: '/packs/create', icon: Package },
-  { name: 'Create Order', href: '/trading?tab=orders&action=create', icon: Target },
-  { name: 'Create DCA', href: '/trading?tab=dca&action=create', icon: Clock },
+  { name: "Add to Watchlist", href: "/?action=add", icon: Plus },
+  { name: "Analyze Token", href: "/analysis?action=new", icon: Search },
+  { name: "Quick Trade", href: "/trading", icon: ArrowLeftRight },
+  { name: "Create Pack", href: "/packs/create", icon: Package },
+  {
+    name: "Create Order",
+    href: "/trading?tab=orders&action=create",
+    icon: Target,
+  },
+  { name: "Create DCA", href: "/trading?tab=dca&action=create", icon: Clock },
 ];
 
 function QuickActionsDropdown() {
@@ -64,11 +67,13 @@ function QuickActionsDropdown() {
       >
         <Zap className="w-5 h-5" />
         Quick Actions
-        <ChevronDown className={cn("w-4 h-4 transition-transform", isOpen && "rotate-180")} />
+        <ChevronDown
+          className={cn("w-4 h-4 transition-transform", isOpen && "rotate-180")}
+        />
       </button>
 
       {isOpen && (
-        <div className="absolute left-4 right-4 mt-2 bg-dark-card border border-dark-border rounded-lg shadow-xl z-50 overflow-hidden">
+        <div className="absolute left-4 right-4 mt-2 bg-dark-card  rounded-lg shadow-xl z-50 overflow-hidden">
           {quickActions.map((action) => (
             <Link
               key={action.name}
@@ -92,7 +97,13 @@ function MobileLogo() {
       <div className="relative">
         <div className="absolute inset-0 bg-gradient-to-r from-brand-500 to-accent-400 rounded-lg blur-md opacity-50" />
         <div className="relative w-8 h-8 bg-gradient-to-br from-brand-500 to-accent-400 rounded-lg flex items-center justify-center overflow-hidden">
-          <Image src="/icon.svg" alt="Maze" width={32} height={32} className="w-full h-full" />
+          <Image
+            src="/icon.svg"
+            alt="Maze"
+            width={32}
+            height={32}
+            className="w-full h-full"
+          />
         </div>
       </div>
       <span className="text-lg font-bold cosmic-text">Maze</span>
@@ -106,12 +117,20 @@ function DesktopLogo() {
       <div className="relative">
         <div className="absolute inset-0 bg-gradient-to-r from-brand-500 to-accent-400 rounded-lg blur-md opacity-50 group-hover:opacity-75 transition-opacity" />
         <div className="relative w-9 h-9 bg-gradient-to-br from-brand-500 to-accent-400 rounded-lg flex items-center justify-center overflow-hidden">
-          <Image src="/icon.svg" alt="MazeTokenomics" width={36} height={36} className="w-full h-full" />
+          <Image
+            src="/icon.svg"
+            alt="MazeTokenomics"
+            width={36}
+            height={36}
+            className="w-full h-full"
+          />
         </div>
       </div>
       <div>
         <span className="text-xl font-bold cosmic-text">Maze</span>
-        <span className="block text-[10px] text-gray-500 -mt-1">Tokenomics</span>
+        <span className="block text-[10px] text-gray-500 -mt-1">
+          Tokenomics
+        </span>
       </div>
     </div>
   );
@@ -119,10 +138,14 @@ function DesktopLogo() {
 
 function getRoleLabel(role) {
   switch (role) {
-    case 'ADMIN': return 'Administrator';
-    case 'USER': return 'User';
-    case 'VIEWER': return 'Viewer';
-    default: return role || 'User';
+    case "ADMIN":
+      return "Administrator";
+    case "USER":
+      return "User";
+    case "VIEWER":
+      return "Viewer";
+    default:
+      return role || "User";
   }
 }
 
@@ -131,8 +154,8 @@ export function DashboardShell({ user, children }) {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const pathname = usePathname();
 
-  const isAdmin = user?.role === 'ADMIN';
-  const isViewer = user?.role === 'VIEWER';
+  const isAdmin = user?.role === "ADMIN";
+  const isViewer = user?.role === "VIEWER";
 
   // Close sidebar and user menu when route changes
   useEffect(() => {
@@ -143,12 +166,12 @@ export function DashboardShell({ user, children }) {
   // Prevent body scroll when sidebar is open
   useEffect(() => {
     if (sidebarOpen) {
-      document.body.style.overflow = 'hidden';
+      document.body.style.overflow = "hidden";
     } else {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     }
     return () => {
-      document.body.style.overflow = '';
+      document.body.style.overflow = "";
     };
   }, [sidebarOpen]);
 
@@ -158,7 +181,7 @@ export function DashboardShell({ user, children }) {
       <WaveBackground />
 
       {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-transparent border-b border-white/5 flex items-center justify-between px-4 backdrop-blur-sm">
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-transparent flex items-center justify-between px-4 backdrop-blur-md">
         <MobileLogo />
         <button
           onClick={() => setSidebarOpen(true)}
@@ -179,13 +202,13 @@ export function DashboardShell({ user, children }) {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-64 bg-black/10 border-r border-white/5 flex flex-col transform transition-transform duration-300 ease-in-out',
-          'lg:translate-x-0',
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+          "fixed inset-y-0 left-0 z-50 w-64 bg-black/20 backdrop-blur-xl flex flex-col transform transition-transform duration-300 ease-in-out",
+          "lg:translate-x-0",
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         {/* Logo */}
-        <div className="h-16 flex items-center justify-between px-6 border-b border-dark-border/50">
+        <div className="h-16 flex items-center justify-between px-6">
           <Link href="/" className="flex items-center">
             <DesktopLogo />
           </Link>
@@ -198,25 +221,24 @@ export function DashboardShell({ user, children }) {
         </div>
 
         {/* Quick Actions Dropdown - Only for non-viewers */}
-        {!isViewer && (
-          <QuickActionsDropdown />
-        )}
+        {!isViewer && <QuickActionsDropdown />}
 
         {/* Navigation */}
         <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
           {navigation.map((item) => {
-            const isActive = pathname === item.href ||
-              (item.href !== '/' && pathname.startsWith(item.href));
+            const isActive =
+              pathname === item.href ||
+              (item.href !== "/" && pathname.startsWith(item.href));
 
             return (
               <Link
                 key={item.name}
                 href={item.href}
                 className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                   isActive
-                    ? 'bg-brand-400/10 text-brand-400'
-                    : 'text-gray-400 hover:text-gray-200 hover:bg-dark-hover'
+                    ? "bg-brand-400/10 text-brand-400"
+                    : "text-gray-400 hover:text-gray-200 hover:bg-dark-hover"
                 )}
               >
                 <item.icon className="w-5 h-5" />
@@ -234,18 +256,19 @@ export function DashboardShell({ user, children }) {
                 </p>
               </div>
               {adminNavigation.map((item) => {
-                const isActive = pathname === item.href ||
-                  (item.href !== '/' && pathname.startsWith(item.href));
+                const isActive =
+                  pathname === item.href ||
+                  (item.href !== "/" && pathname.startsWith(item.href));
 
                 return (
                   <Link
                     key={item.name}
                     href={item.href}
                     className={cn(
-                      'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
+                      "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                       isActive
-                        ? 'bg-brand-400/10 text-brand-400'
-                        : 'text-gray-400 hover:text-gray-200 hover:bg-dark-hover'
+                        ? "bg-brand-400/10 text-brand-400"
+                        : "text-gray-400 hover:text-gray-200 hover:bg-dark-hover"
                     )}
                   >
                     <item.icon className="w-5 h-5" />
@@ -258,25 +281,26 @@ export function DashboardShell({ user, children }) {
         </nav>
 
         {/* User Info */}
-        <div className="p-4 border-t border-dark-border">
+        <div className="p-4">
           <button
             onClick={() => setUserMenuOpen(!userMenuOpen)}
             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-dark-hover transition-colors"
           >
-            <div className="w-8 h-8 rounded-full bg-brand-400/20 flex items-center justify-center">
-              <span className="text-brand-400 font-medium text-sm">
-                {user?.name?.charAt(0) || 'U'}
-              </span>
-            </div>
+            <Avatar name={user?.name || "User"} size={32} />
             <div className="flex-1 min-w-0 text-left">
               <p className="text-sm font-medium text-gray-200 truncate">
-                {user?.name || 'User'}
+                {user?.name || "User"}
               </p>
               <p className="text-xs text-gray-500 truncate">
                 {getRoleLabel(user?.role)}
               </p>
             </div>
-            <ChevronDown className={cn("w-4 h-4 text-gray-500 transition-transform", userMenuOpen && "rotate-180")} />
+            <ChevronDown
+              className={cn(
+                "w-4 h-4 text-gray-500 transition-transform",
+                userMenuOpen && "rotate-180"
+              )}
+            />
           </button>
           {/* User Menu - Shows on click */}
           {userMenuOpen && (
@@ -289,7 +313,7 @@ export function DashboardShell({ user, children }) {
                 Password
               </Link>
               <button
-                onClick={() => signOut({ callbackUrl: '/login' })}
+                onClick={() => signOut({ callbackUrl: "/login" })}
                 className="flex-1 flex items-center justify-center gap-2 py-2 text-xs text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
               >
                 <LogOut className="w-3.5 h-3.5" />
@@ -298,7 +322,7 @@ export function DashboardShell({ user, children }) {
             </div>
           )}
           {/* Privacy & Legal Link */}
-          <div className="mt-3 pt-3 border-t border-dark-border/50 px-3">
+          <div className="mt-3 pt-3 px-3">
             <Link
               href="/legal"
               className="flex items-center justify-center gap-1.5 text-[11px] text-gray-500 hover:text-gray-400 transition-colors"
@@ -312,9 +336,7 @@ export function DashboardShell({ user, children }) {
 
       {/* Main Content */}
       <main className="lg:pl-64 pt-14 lg:pt-0 min-h-screen">
-        <WalletProvider>
-          {children}
-        </WalletProvider>
+        <WalletProvider>{children}</WalletProvider>
       </main>
     </div>
   );

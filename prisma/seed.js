@@ -32,6 +32,69 @@ async function main() {
 
   console.log('Created admin user:', admin.email);
 
+  // Add WOLF token to watchlist by default for testing
+  const wolfToken = {
+    contractAddress: 'BTr5SwWSKPBrdUzboi2SVr1QvSjmh1caCYUkxsxLpump',
+    chain: 'SOLANA',
+    symbol: 'WOLF',
+    name: 'WOLF',
+  };
+
+  // Check if WOLF already exists in watchlist
+  const existingWolf = await prisma.watchlistItem.findFirst({
+    where: {
+      userId: admin.id,
+      contractAddress: wolfToken.contractAddress,
+    },
+  });
+
+  if (!existingWolf) {
+    // Create Token record first
+    let token = await prisma.token.findFirst({
+      where: {
+        contractAddress: wolfToken.contractAddress,
+        chain: wolfToken.chain,
+      },
+    });
+
+    if (!token) {
+      token = await prisma.token.create({
+        data: {
+          contractAddress: wolfToken.contractAddress,
+          chain: wolfToken.chain,
+          symbol: wolfToken.symbol,
+          name: wolfToken.name,
+          decimals: 9,
+        },
+      });
+      console.log('Created WOLF token');
+    }
+
+    // Add to watchlist
+    await prisma.watchlistItem.create({
+      data: {
+        userId: admin.id,
+        tokenId: token.id,
+        contractAddress: wolfToken.contractAddress,
+        chain: wolfToken.chain,
+        symbol: wolfToken.symbol,
+        name: wolfToken.name,
+        sortOrder: 0,
+      },
+    });
+    console.log('Added WOLF to watchlist');
+
+    // Create vetting process for WOLF
+    await prisma.vettingProcess.create({
+      data: {
+        tokenId: token.id,
+        status: 'PENDING',
+        priority: 'NORMAL',
+      },
+    });
+    console.log('Created vetting process for WOLF');
+  }
+
   // Create some sample tokens for demo
   const sampleTokens = [
     {

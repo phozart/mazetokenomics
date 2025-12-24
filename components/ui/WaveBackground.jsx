@@ -22,55 +22,55 @@ export function WaveBackground() {
     window.addEventListener('resize', resize);
 
     const animate = () => {
-      time += 0.015; // Faster movement
+      time += 0.005; // Much slower movement
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Flowing color waves - subtle
+      // Flowing color waves - very subtle and blurry
       const waves = [
         {
           baseX: canvas.width * 0.2,
           baseY: canvas.height * 0.3,
-          color: 'rgba(139, 92, 246, 0.10)',  // purple
-          size: Math.max(canvas.width, canvas.height) * 0.7,
-          speed: 1,
-          xWave: 0.35,
-          yWave: 0.25,
+          color: 'rgba(139, 92, 246, 0.04)',  // purple - very faint
+          size: Math.max(canvas.width, canvas.height) * 0.9,
+          speed: 0.3,
+          xWave: 0.2,
+          yWave: 0.15,
         },
         {
           baseX: canvas.width * 0.7,
           baseY: canvas.height * 0.5,
-          color: 'rgba(167, 139, 250, 0.08)',  // light purple
-          size: Math.max(canvas.width, canvas.height) * 0.6,
-          speed: 0.8,
-          xWave: 0.3,
-          yWave: 0.35,
+          color: 'rgba(167, 139, 250, 0.03)',  // light purple - very faint
+          size: Math.max(canvas.width, canvas.height) * 0.8,
+          speed: 0.25,
+          xWave: 0.18,
+          yWave: 0.2,
         },
         {
           baseX: canvas.width * 0.8,
           baseY: canvas.height * 0.7,
-          color: 'rgba(6, 182, 212, 0.09)',   // cyan
-          size: Math.max(canvas.width, canvas.height) * 0.65,
-          speed: 1.2,
-          xWave: 0.4,
-          yWave: 0.3,
+          color: 'rgba(6, 182, 212, 0.035)',   // cyan - very faint
+          size: Math.max(canvas.width, canvas.height) * 0.85,
+          speed: 0.35,
+          xWave: 0.22,
+          yWave: 0.18,
         },
         {
           baseX: canvas.width * 0.3,
           baseY: canvas.height * 0.8,
-          color: 'rgba(109, 40, 217, 0.08)',  // deep purple
-          size: Math.max(canvas.width, canvas.height) * 0.55,
-          speed: 0.6,
-          xWave: 0.25,
-          yWave: 0.3,
+          color: 'rgba(109, 40, 217, 0.03)',  // deep purple - very faint
+          size: Math.max(canvas.width, canvas.height) * 0.75,
+          speed: 0.2,
+          xWave: 0.15,
+          yWave: 0.18,
         },
         {
           baseX: canvas.width * 0.5,
           baseY: canvas.height * 0.2,
-          color: 'rgba(34, 211, 238, 0.07)',  // light cyan
-          size: Math.max(canvas.width, canvas.height) * 0.5,
-          speed: 1.4,
-          xWave: 0.3,
-          yWave: 0.35,
+          color: 'rgba(34, 211, 238, 0.025)',  // light cyan - very faint
+          size: Math.max(canvas.width, canvas.height) * 0.7,
+          speed: 0.4,
+          xWave: 0.18,
+          yWave: 0.2,
         },
       ];
 
@@ -81,7 +81,8 @@ export function WaveBackground() {
 
         const gradient = ctx.createRadialGradient(x, y, 0, x, y, size);
         gradient.addColorStop(0, wave.color);
-        gradient.addColorStop(0.5, wave.color.replace(/[\d.]+\)$/, '0.08)'));
+        gradient.addColorStop(0.3, wave.color.replace(/[\d.]+\)$/, '0.02)'));
+        gradient.addColorStop(0.6, wave.color.replace(/[\d.]+\)$/, '0.01)'));
         gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
         ctx.beginPath();
