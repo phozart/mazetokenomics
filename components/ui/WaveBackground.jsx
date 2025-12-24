@@ -25,12 +25,12 @@ export function WaveBackground() {
       time += 0.015; // Faster movement
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Flowing color waves - more visible
+      // Flowing color waves - subtle
       const waves = [
         {
           baseX: canvas.width * 0.2,
           baseY: canvas.height * 0.3,
-          color: 'rgba(139, 92, 246, 0.18)',  // purple - more visible
+          color: 'rgba(139, 92, 246, 0.10)',  // purple
           size: Math.max(canvas.width, canvas.height) * 0.7,
           speed: 1,
           xWave: 0.35,
@@ -39,7 +39,7 @@ export function WaveBackground() {
         {
           baseX: canvas.width * 0.7,
           baseY: canvas.height * 0.5,
-          color: 'rgba(167, 139, 250, 0.15)',  // light purple
+          color: 'rgba(167, 139, 250, 0.08)',  // light purple
           size: Math.max(canvas.width, canvas.height) * 0.6,
           speed: 0.8,
           xWave: 0.3,
@@ -48,7 +48,7 @@ export function WaveBackground() {
         {
           baseX: canvas.width * 0.8,
           baseY: canvas.height * 0.7,
-          color: 'rgba(6, 182, 212, 0.16)',   // cyan - more visible
+          color: 'rgba(6, 182, 212, 0.09)',   // cyan
           size: Math.max(canvas.width, canvas.height) * 0.65,
           speed: 1.2,
           xWave: 0.4,
@@ -57,7 +57,7 @@ export function WaveBackground() {
         {
           baseX: canvas.width * 0.3,
           baseY: canvas.height * 0.8,
-          color: 'rgba(109, 40, 217, 0.14)',  // deep purple
+          color: 'rgba(109, 40, 217, 0.08)',  // deep purple
           size: Math.max(canvas.width, canvas.height) * 0.55,
           speed: 0.6,
           xWave: 0.25,
@@ -66,7 +66,7 @@ export function WaveBackground() {
         {
           baseX: canvas.width * 0.5,
           baseY: canvas.height * 0.2,
-          color: 'rgba(34, 211, 238, 0.12)',  // light cyan
+          color: 'rgba(34, 211, 238, 0.07)',  // light cyan
           size: Math.max(canvas.width, canvas.height) * 0.5,
           speed: 1.4,
           xWave: 0.3,

@@ -99,7 +99,7 @@ export function Sidebar({ user }) {
             </p>
           </div>
           <button
-            onClick={() => signOut({ callbackUrl: `${window.location.origin}/login` })}
+            onClick={() => signOut({ callbackUrl: '/login' })}
             className="p-1.5 text-gray-400 hover:text-gray-200 hover:bg-dark-hover rounded-lg transition-colors"
             title="Sign out"
           >
