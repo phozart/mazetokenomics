@@ -19,8 +19,9 @@ RUN npx prisma generate
 COPY . .
 
 # Build the application with memory limit to prevent OOM
+# Use webpack instead of Turbopack for more stable memory usage
 ENV NODE_OPTIONS="--max-old-space-size=1536"
-RUN npm run build
+RUN npx next build --webpack
 
 # Production stage
 FROM node:20-alpine AS runner
