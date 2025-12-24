@@ -18,7 +18,8 @@ RUN npx prisma generate
 # Copy application code
 COPY . .
 
-# Build the application
+# Build the application with memory limit to prevent OOM
+ENV NODE_OPTIONS="--max-old-space-size=1536"
 RUN npm run build
 
 # Production stage
