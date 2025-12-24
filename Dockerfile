@@ -18,6 +18,15 @@ RUN npx prisma generate
 # Copy application code
 COPY . .
 
+# Build args for client-side env vars (NEXT_PUBLIC_*)
+# These must be set at build time for Next.js to include them
+ARG NEXT_PUBLIC_SOLANA_RPC_URL
+ARG NEXT_PUBLIC_HELIUS_API_KEY
+
+# Set them as ENV so Next.js can access during build
+ENV NEXT_PUBLIC_SOLANA_RPC_URL=$NEXT_PUBLIC_SOLANA_RPC_URL
+ENV NEXT_PUBLIC_HELIUS_API_KEY=$NEXT_PUBLIC_HELIUS_API_KEY
+
 # Build the application with memory limit to prevent OOM
 # Use webpack instead of Turbopack for more stable memory usage
 ENV NODE_OPTIONS="--max-old-space-size=1536"

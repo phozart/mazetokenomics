@@ -9,21 +9,26 @@ import { PhantomWalletAdapter, SolflareWalletAdapter } from '@solana/wallet-adap
 import '@solana/wallet-adapter-react-ui/styles.css';
 
 // Get Solana RPC endpoint
-// Priority: NEXT_PUBLIC_SOLANA_RPC_URL > constructed from NEXT_PUBLIC_HELIUS_API_KEY > public endpoint
+// For production: Set SOLANA_RPC_URL in your .env file before building
+// The public endpoint is rate-limited and may block requests from servers
 function getSolanaRpcEndpoint() {
-  // Direct RPC URL takes priority
+  // Direct RPC URL takes priority (set at build time)
   if (process.env.NEXT_PUBLIC_SOLANA_RPC_URL) {
     return process.env.NEXT_PUBLIC_SOLANA_RPC_URL;
   }
 
-  // Construct from Helius API key if available
+  // Construct from Helius API key if available (set at build time)
   if (process.env.NEXT_PUBLIC_HELIUS_API_KEY) {
     return `https://mainnet.helius-rpc.com/?api-key=${process.env.NEXT_PUBLIC_HELIUS_API_KEY}`;
   }
 
-  // Fallback to public endpoint (rate-limited)
-  // For production, set NEXT_PUBLIC_SOLANA_RPC_URL or NEXT_PUBLIC_HELIUS_API_KEY
-  console.warn('[Wallet] Using public Solana RPC - may be rate limited. Set NEXT_PUBLIC_SOLANA_RPC_URL for better reliability.');
+  // Use a free RPC that's more reliable than the public one
+  // QuickNode and other providers offer free tiers
+  // For now, use Solana's devnet-compatible public RPC
+  console.warn('[Wallet] No RPC configured. Using fallback. Set NEXT_PUBLIC_SOLANA_RPC_URL for production.');
+
+  // Use a public RPC that allows CORS - these may still be rate limited
+  // Best practice: Get a free Helius/QuickNode API key and set at build time
   return 'https://api.mainnet-beta.solana.com';
 }
 

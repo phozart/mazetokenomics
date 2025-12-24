@@ -32,9 +32,9 @@ export function SwapDetails({
   return (
     <div className="bg-dark-bg/50 rounded-xl border border-dark-border/30">
       {/* Main Info Row */}
-      <button
+      <div
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between p-3 text-sm"
+        className="w-full flex items-center justify-between p-3 text-sm cursor-pointer"
       >
         <div className="flex items-center gap-2">
           <span className="text-gray-400">
@@ -67,7 +67,7 @@ export function SwapDetails({
             expanded && 'rotate-180'
           )} />
         </div>
-      </button>
+      </div>
 
       {/* Slippage Settings Popover */}
       {showSettings && (

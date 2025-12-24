@@ -4,7 +4,7 @@ import { forwardRef } from 'react';
 import { cn } from '@/lib/utils';
 
 export const Input = forwardRef(function Input(
-  { className, type = 'text', label, error, icon: Icon, ...props },
+  { className, type = 'text', label, error, icon: Icon, iconClassName, ...props },
   ref
 ) {
   return (
@@ -17,7 +17,7 @@ export const Input = forwardRef(function Input(
       <div className="relative">
         {Icon && (
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Icon className="w-5 h-5 text-gray-500" />
+            <Icon className={iconClassName || "w-5 h-5 text-gray-500"} />
           </div>
         )}
         <input

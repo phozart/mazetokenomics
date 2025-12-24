@@ -286,7 +286,7 @@ export function DashboardShell({ user, children }) {
             onClick={() => setUserMenuOpen(!userMenuOpen)}
             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-dark-hover transition-colors"
           >
-            <Avatar name={user?.name || "User"} size={32} />
+            <Avatar name={user?.name || "User"} size={44} />
             <div className="flex-1 min-w-0 text-left">
               <p className="text-sm font-medium text-gray-200 truncate">
                 {user?.name || "User"}

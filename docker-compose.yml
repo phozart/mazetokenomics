@@ -24,6 +24,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_SOLANA_RPC_URL=${SOLANA_RPC_URL:-}
+        - NEXT_PUBLIC_HELIUS_API_KEY=${HELIUS_API_KEY:-}
     container_name: maze-tokenomics-app
     environment:
       DATABASE_URL: postgresql://vetting:${DB_PASSWORD:-vetting_secret_123}@postgres:5432/vetting_tool
