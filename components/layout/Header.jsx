@@ -6,7 +6,7 @@ import { WalletButton } from "@/components/wallet";
 
 export function Header({ title, description, children }) {
   return (
-    <header className="sticky top-14 lg:top-0 z-30  bg-dark-card bg-opacity-20px-4 sm:px-6 py-3 sm:py-0 sm:h-16 sm:flex sm:items-center sm:justify-between">
+    <header className="sticky top-14 lg:top-0 z-30 bg-dark-card/20 backdrop-blur-sm px-4 sm:px-6 py-3 sm:py-0 sm:h-16 sm:flex sm:items-center sm:justify-between">
       <div className="mb-2 sm:mb-0">
         {title && (
           <h1 className="text-lg sm:text-xl font-semibold text-gray-100">

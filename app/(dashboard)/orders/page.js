@@ -109,7 +109,7 @@ export default function OrdersPage() {
   const historyOrders = orders.filter((o) => o.status !== 'active');
 
   return (
-    <div className="min-h-screen bg-dark-bg">
+    <div className="min-h-screen">
       <Header
         title="Orders"
         description="Limit orders, stop loss & take profit"

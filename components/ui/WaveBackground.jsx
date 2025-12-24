@@ -22,55 +22,46 @@ export function WaveBackground() {
     window.addEventListener('resize', resize);
 
     const animate = () => {
-      time += 0.005; // Much slower movement
+      time += 0.015; // Noticeable flowing movement
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Flowing color waves - very subtle and blurry
+      // Flowing color waves - subtle glow effect
       const waves = [
         {
-          baseX: canvas.width * 0.2,
-          baseY: canvas.height * 0.3,
-          color: 'rgba(139, 92, 246, 0.04)',  // purple - very faint
-          size: Math.max(canvas.width, canvas.height) * 0.9,
-          speed: 0.3,
-          xWave: 0.2,
-          yWave: 0.15,
+          baseX: canvas.width * 0.3,
+          baseY: canvas.height * 0.4,
+          color: 'rgba(139, 92, 246, 0.08)',  // purple
+          size: Math.max(canvas.width, canvas.height) * 0.8,
+          speed: 1.2,
+          xWave: 0.35,
+          yWave: 0.3,
         },
         {
           baseX: canvas.width * 0.7,
-          baseY: canvas.height * 0.5,
-          color: 'rgba(167, 139, 250, 0.03)',  // light purple - very faint
-          size: Math.max(canvas.width, canvas.height) * 0.8,
-          speed: 0.25,
-          xWave: 0.18,
-          yWave: 0.2,
-        },
-        {
-          baseX: canvas.width * 0.8,
-          baseY: canvas.height * 0.7,
-          color: 'rgba(6, 182, 212, 0.035)',   // cyan - very faint
-          size: Math.max(canvas.width, canvas.height) * 0.85,
-          speed: 0.35,
-          xWave: 0.22,
-          yWave: 0.18,
-        },
-        {
-          baseX: canvas.width * 0.3,
-          baseY: canvas.height * 0.8,
-          color: 'rgba(109, 40, 217, 0.03)',  // deep purple - very faint
+          baseY: canvas.height * 0.6,
+          color: 'rgba(167, 139, 250, 0.07)',  // light purple
           size: Math.max(canvas.width, canvas.height) * 0.75,
-          speed: 0.2,
-          xWave: 0.15,
-          yWave: 0.18,
+          speed: 0.9,
+          xWave: 0.3,
+          yWave: 0.35,
         },
         {
-          baseX: canvas.width * 0.5,
-          baseY: canvas.height * 0.2,
-          color: 'rgba(34, 211, 238, 0.025)',  // light cyan - very faint
+          baseX: canvas.width * 0.6,
+          baseY: canvas.height * 0.3,
+          color: 'rgba(6, 182, 212, 0.10)',   // cyan
+          size: Math.max(canvas.width, canvas.height) * 0.8,
+          speed: 1.4,
+          xWave: 0.4,
+          yWave: 0.3,
+        },
+        {
+          baseX: canvas.width * 0.4,
+          baseY: canvas.height * 0.7,
+          color: 'rgba(34, 211, 238, 0.09)',  // light cyan
           size: Math.max(canvas.width, canvas.height) * 0.7,
-          speed: 0.4,
-          xWave: 0.18,
-          yWave: 0.2,
+          speed: 1.1,
+          xWave: 0.35,
+          yWave: 0.4,
         },
       ];
 
@@ -79,10 +70,14 @@ export function WaveBackground() {
         const y = wave.baseY + Math.cos(time * wave.speed * 0.7) * canvas.height * wave.yWave;
         const size = wave.size * (1 + Math.sin(time * wave.speed * 0.5) * 0.15);
 
+        // Extract the base opacity from the color
+        const baseOpacity = parseFloat(wave.color.match(/[\d.]+\)$/)[0]);
+
         const gradient = ctx.createRadialGradient(x, y, 0, x, y, size);
         gradient.addColorStop(0, wave.color);
-        gradient.addColorStop(0.3, wave.color.replace(/[\d.]+\)$/, '0.02)'));
-        gradient.addColorStop(0.6, wave.color.replace(/[\d.]+\)$/, '0.01)'));
+        gradient.addColorStop(0.2, wave.color.replace(/[\d.]+\)$/, `${baseOpacity * 0.7})`));
+        gradient.addColorStop(0.4, wave.color.replace(/[\d.]+\)$/, `${baseOpacity * 0.4})`));
+        gradient.addColorStop(0.7, wave.color.replace(/[\d.]+\)$/, `${baseOpacity * 0.15})`));
         gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
         ctx.beginPath();
@@ -106,7 +101,7 @@ export function WaveBackground() {
     <canvas
       ref={canvasRef}
       className="fixed inset-0 pointer-events-none"
-      style={{ zIndex: 0 }}
+      style={{ zIndex: 1 }}
     />
   );
 }

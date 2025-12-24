@@ -225,7 +225,7 @@ export default function PacksPage() {
   };
 
   return (
-    <div className="min-h-screen bg-dark-bg">
+    <div className="min-h-screen">
       <Header
         title="Token Packs"
         description="Create and manage diversified token portfolios"

@@ -261,7 +261,7 @@ export default function TradingPage() {
   const pausedDca = dcaSchedules.filter((s) => s.status === 'paused');
 
   return (
-    <div className="min-h-screen bg-dark-bg">
+    <div className="min-h-screen">
       <Header title="Trading" description="Swap, orders, and DCA" />
 
       {/* Tab Navigation */}

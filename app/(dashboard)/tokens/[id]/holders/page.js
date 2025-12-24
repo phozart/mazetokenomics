@@ -200,7 +200,7 @@ export default function HolderAnalysisPage({ params }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-dark-bg">
+      <div className="min-h-screen">
         <Header />
         <div className="flex items-center justify-center h-[calc(100vh-64px)]">
           <Loader2 className="w-8 h-8 text-brand-400 animate-spin" />
@@ -210,7 +210,7 @@ export default function HolderAnalysisPage({ params }) {
   }
 
   return (
-    <div className="min-h-screen bg-dark-bg">
+    <div className="min-h-screen">
       <Header />
 
       <main className="max-w-7xl mx-auto px-4 py-6">

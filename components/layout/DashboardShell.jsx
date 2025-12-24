@@ -176,7 +176,7 @@ export function DashboardShell({ user, children }) {
   }, [sidebarOpen]);
 
   return (
-    <div className="min-h-screen bg-dark-bg">
+    <div className="min-h-screen">
       {/* Animated Wave Background */}
       <WaveBackground />
 

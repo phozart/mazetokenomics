@@ -146,7 +146,7 @@ export default function DcaPage() {
   );
 
   return (
-    <div className="min-h-screen bg-dark-bg">
+    <div className="min-h-screen">
       <Header
         title="DCA Schedules"
         description="Dollar cost averaging automation"

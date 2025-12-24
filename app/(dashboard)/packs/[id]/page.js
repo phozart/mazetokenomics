@@ -111,7 +111,7 @@ export default function PackDetailPage({ params }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-dark-bg flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center">
         <Loader2 className="w-8 h-8 text-brand-400 animate-spin" />
       </div>
     );
@@ -137,7 +137,7 @@ export default function PackDetailPage({ params }) {
   };
 
   return (
-    <div className="min-h-screen bg-dark-bg">
+    <div className="min-h-screen">
       {/* Header */}
       <div className="border-b border-dark-border bg-dark-card/50 backdrop-blur-sm sticky top-0 z-30">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">

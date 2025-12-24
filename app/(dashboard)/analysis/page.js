@@ -203,7 +203,7 @@ export default function AnalysisPage() {
     .slice(0, 5);
 
   return (
-    <div className="min-h-screen bg-dark-bg">
+    <div className="min-h-screen">
       <Header title="Token Analysis" description="Analyze and track token security" />
 
       {/* Tab Navigation */}
