@@ -3,16 +3,16 @@ services:
     image: postgres:16-alpine
     container_name: maze-tokenomics-db
     environment:
-      POSTGRES_USER: vetting
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-vetting_secret_123}
-      POSTGRES_DB: vetting_tool
+      POSTGRES_USER: ${PGUSER:-vetting}
+      POSTGRES_PASSWORD: ${PGPASSWORD:-vetting_secret_123}
+      POSTGRES_DB: ${PGDATABASE:-vetting_tool}
     volumes:
       - maze_postgres_data:/var/lib/postgresql/data
       - ./docker/init:/docker-entrypoint-initdb.d:ro
     ports:
-      - "5433:5432"
+      - "${PGPORT_EXTERNAL:-5433}:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U vetting -d vetting_tool"]
+      test: ["CMD-SHELL", "pg_isready -U ${PGUSER:-vetting} -d ${PGDATABASE:-vetting_tool}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -29,9 +29,18 @@ services:
         - NEXT_PUBLIC_HELIUS_API_KEY=${HELIUS_API_KEY:-}
     container_name: maze-tokenomics-app
     environment:
-      DATABASE_URL: postgresql://vetting:${DB_PASSWORD:-vetting_secret_123}@postgres:5432/vetting_tool
+      # Database - all from .env
+      PGHOST: postgres
+      PGPORT: 5432
+      PGUSER: ${PGUSER:-vetting}
+      PGPASSWORD: ${PGPASSWORD:-vetting_secret_123}
+      PGDATABASE: ${PGDATABASE:-vetting_tool}
+      DATABASE_URL: postgresql://${PGUSER:-vetting}:${PGPASSWORD:-vetting_secret_123}@postgres:5432/${PGDATABASE:-vetting_tool}
+      # Auth
       NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-maze-tokenomics-secret-key-change-in-production}
       NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3003}
+      ADMIN_DEFAULT_PASSWORD: ${ADMIN_DEFAULT_PASSWORD:-}
+      # External APIs
       ETHERSCAN_API_KEY: ${ETHERSCAN_API_KEY:-}
       MORALIS_API_KEY: ${MORALIS_API_KEY:-}
       HELIUS_API_KEY: ${HELIUS_API_KEY:-}

@@ -1,19 +1,20 @@
-version: '3.8'
+# DEPRECATED: Use ../docker-compose.yml instead
+# This file is kept for backwards compatibility only
 
 services:
   postgres:
     image: postgres:16-alpine
     container_name: maze-analytics-db
     environment:
-      POSTGRES_USER: vetting
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-vetting_secret_123}
-      POSTGRES_DB: vetting_tool
+      POSTGRES_USER: ${PGUSER:-vetting}
+      POSTGRES_PASSWORD: ${PGPASSWORD:-vetting_secret_123}
+      POSTGRES_DB: ${PGDATABASE:-vetting_tool}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U vetting"]
+      test: ["CMD-SHELL", "pg_isready -U ${PGUSER:-vetting}"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -26,9 +27,15 @@ services:
       dockerfile: docker/Dockerfile
     container_name: maze-analytics-app
     environment:
-      DATABASE_URL: postgresql://vetting:${DB_PASSWORD:-vetting_secret_123}@postgres:5432/vetting_tool
-      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-maze-analytics-secret-key-change-in-production}
+      PGHOST: postgres
+      PGPORT: 5432
+      PGUSER: ${PGUSER:-vetting}
+      PGPASSWORD: ${PGPASSWORD:-vetting_secret_123}
+      PGDATABASE: ${PGDATABASE:-vetting_tool}
+      DATABASE_URL: postgresql://${PGUSER:-vetting}:${PGPASSWORD:-vetting_secret_123}@postgres:5432/${PGDATABASE:-vetting_tool}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-change-in-production}
       NEXTAUTH_URL: http://localhost:3001
+      ADMIN_DEFAULT_PASSWORD: ${ADMIN_DEFAULT_PASSWORD:-}
       ETHERSCAN_API_KEY: ${ETHERSCAN_API_KEY:-}
       MORALIS_API_KEY: ${MORALIS_API_KEY:-}
     ports:

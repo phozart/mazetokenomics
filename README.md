@@ -73,8 +73,10 @@ Open [http://localhost:3003](http://localhost:3003) in your browser.
 
 ### Default Login
 
-- **Username**: `maze`
-- **Password**: `maze`
+- **Username**: `admin`
+- **Password**: `ChangeMe123!`
+
+> ⚠️ **Important**: Change the admin password immediately after first login!
 
 ## Docker Deployment
 
