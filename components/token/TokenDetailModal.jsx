@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { ChainBadge, RiskBadge } from '@/components/ui/Badge';
@@ -29,6 +30,8 @@ import {
   Edit3,
   X,
   Check,
+  ArrowLeftRight,
+  Search,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -202,6 +205,7 @@ export function TokenDetailModal({
   redFlagCount,
   greenFlagCount,
 }) {
+  const router = useRouter();
   const [period, setPeriod] = useState('24h');
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'analysis'
   const [chartData, setChartData] = useState([]);
@@ -211,8 +215,38 @@ export function TokenDetailModal({
   const [securityChecks, setSecurityChecks] = useState(null);
   const [vettingData, setVettingData] = useState(null);
   const [infoLoading, setInfoLoading] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
 
   const chainConfig = CHAINS[chain];
+
+  // Handle analyze token - auto-queue and redirect
+  const handleAnalyzeToken = async () => {
+    setAnalyzing(true);
+    try {
+      const response = await fetch('/api/tokens', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contractAddress,
+          chain: chain || 'SOLANA',
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Close modal and navigate to the analysis page
+        onClose();
+        router.push(`/tokens/${data.token.vettingProcessId || data.token.id}`);
+      } else {
+        const error = await response.json();
+        toast.error(error.message || 'Failed to analyze token');
+      }
+    } catch (error) {
+      toast.error('Failed to analyze token');
+    } finally {
+      setAnalyzing(false);
+    }
+  };
 
   // Use fetched vettingData if prop not provided
   const effectiveVettingId = vettingProcessId || vettingData?.vettingProcessId;
@@ -339,18 +373,33 @@ export function TokenDetailModal({
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {/* Trade button - Solana only */}
+            {chain?.toUpperCase() === 'SOLANA' && (
+              <Link href={`/trade?token=${encodeURIComponent(contractAddress)}&symbol=${encodeURIComponent(symbol || '')}&name=${encodeURIComponent(name || '')}`}>
+                <button className="p-2 text-gray-400 hover:text-cyan-400 hover:bg-cyan-400/10 rounded-lg transition-colors" title="Trade">
+                  <ArrowLeftRight className="w-5 h-5" />
+                </button>
+              </Link>
+            )}
             {effectiveVettingId ? (
               <Link href={`/tokens/${effectiveVettingId}`}>
-                <Button variant="primary" size="sm" icon={Shield}>
-                  View Analysis
-                </Button>
+                <button className="p-2 text-brand-400 hover:text-brand-300 hover:bg-brand-400/10 rounded-lg transition-colors" title="View Analysis">
+                  <Shield className="w-5 h-5" />
+                </button>
               </Link>
             ) : (
-              <Link href={`/tokens/new?address=${contractAddress}&chain=${chain}`}>
-                <Button variant="secondary" size="sm" icon={BarChart3}>
-                  Analyze Token
-                </Button>
-              </Link>
+              <button
+                onClick={handleAnalyzeToken}
+                disabled={analyzing}
+                className="p-2 text-gray-400 hover:text-brand-400 hover:bg-brand-400/10 rounded-lg transition-colors disabled:opacity-50"
+                title="Analyze Token"
+              >
+                {analyzing ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Search className="w-5 h-5" />
+                )}
+              </button>
             )}
           </div>
         </div>

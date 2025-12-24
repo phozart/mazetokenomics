@@ -2,6 +2,7 @@
 
 import { Bell, Search } from 'lucide-react';
 import { Input } from '@/components/ui/Input';
+import { WalletButton } from '@/components/wallet';
 
 export function Header({ title, description, children }) {
   return (
@@ -12,24 +13,14 @@ export function Header({ title, description, children }) {
       </div>
 
       <div className="flex items-center gap-2 sm:gap-4">
-        {/* Search - hidden on mobile */}
-        <div className="relative w-48 lg:w-64 hidden sm:block">
-          <Input
-            type="search"
-            placeholder="Search tokens..."
-            icon={Search}
-            className="py-2"
-          />
-        </div>
-
-        {/* Notifications - smaller on mobile */}
-        <button className="relative p-2 text-gray-400 hover:text-gray-200 hover:bg-dark-hover rounded-lg transition-colors hidden sm:block">
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
-        </button>
-
-        {/* Additional actions */}
+        {/* Page-specific actions */}
         {children}
+
+        {/* Divider */}
+        {children && <div className="hidden sm:block w-px h-8 bg-dark-border" />}
+
+        {/* Wallet Button - Always visible */}
+        <WalletButton />
       </div>
     </header>
   );

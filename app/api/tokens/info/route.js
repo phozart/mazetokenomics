@@ -44,6 +44,9 @@ export async function GET(request) {
       // Get the correct address format from DexScreener (important for Solana Base58 case sensitivity)
       if (pair?.baseToken?.address) {
         correctAddress = pair.baseToken.address;
+        console.log(`[TokenInfo] Got correct address from DexScreener: ${correctAddress}`);
+      } else {
+        console.log(`[TokenInfo] DexScreener did not return baseToken address for: ${address}`);
       }
     } catch (error) {
       console.error('Failed to fetch DexScreener info:', error);
@@ -51,7 +54,12 @@ export async function GET(request) {
 
     // Fetch from RugCheck for Solana tokens
     // Use correctAddress from DexScreener which has proper Base58 case
-    if (chain?.toUpperCase() === 'SOLANA') {
+    // Skip if address looks lowercased (Solana addresses are Base58, mixed case)
+    const isLikelyLowercased = chain?.toUpperCase() === 'SOLANA' &&
+      correctAddress === correctAddress.toLowerCase() &&
+      /[a-z]/.test(correctAddress);
+
+    if (chain?.toUpperCase() === 'SOLANA' && !isLikelyLowercased) {
       try {
         const rawRugCheck = await getRugCheckReport(correctAddress);
         if (rawRugCheck) {
@@ -83,6 +91,8 @@ export async function GET(request) {
       } catch (error) {
         console.error('Failed to fetch RugCheck info:', error);
       }
+    } else if (isLikelyLowercased) {
+      console.log(`[TokenInfo] Skipping RugCheck - address appears to be lowercased: ${correctAddress}`);
     }
 
     // Look up existing token and vetting process in our database

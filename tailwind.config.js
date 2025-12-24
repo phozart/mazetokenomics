@@ -55,6 +55,7 @@ module.exports = {
         'glow': 'glow 2s ease-in-out infinite alternate',
         'shimmer': 'shimmer 2s linear infinite',
         'twinkle': 'twinkle 3s ease-in-out infinite',
+        'gradient-x': 'gradient-x 3s ease infinite',
       },
       keyframes: {
         float: {
@@ -72,6 +73,10 @@ module.exports = {
         twinkle: {
           '0%, 100%': { opacity: 0.3 },
           '50%': { opacity: 1 },
+        },
+        'gradient-x': {
+          '0%, 100%': { backgroundPosition: '0% 50%' },
+          '50%': { backgroundPosition: '100% 50%' },
         },
       },
       backgroundImage: {

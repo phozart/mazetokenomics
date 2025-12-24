@@ -360,3 +360,180 @@ ALTER TABLE "WatchlistItem" ADD CONSTRAINT "WatchlistItem_userId_fkey" FOREIGN K
 -- AddForeignKey
 ALTER TABLE "WatchlistItem" ADD CONSTRAINT "WatchlistItem_tokenId_fkey" FOREIGN KEY ("tokenId") REFERENCES "Token"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
+-- ============================================
+-- Pack Trading System Tables
+-- ============================================
+
+-- CreateTable
+CREATE TABLE "Pack" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "riskLevel" TEXT NOT NULL DEFAULT 'medium',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Pack_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "PackToken" (
+    "id" TEXT NOT NULL,
+    "packId" TEXT NOT NULL,
+    "tokenAddress" TEXT NOT NULL,
+    "symbol" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "weight" DOUBLE PRECISION NOT NULL,
+    "logoURI" TEXT,
+    "decimals" INTEGER NOT NULL DEFAULT 9,
+
+    CONSTRAINT "PackToken_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "PackPurchase" (
+    "id" TEXT NOT NULL,
+    "packId" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "totalAmountSol" DOUBLE PRECISION NOT NULL,
+    "status" TEXT NOT NULL DEFAULT 'pending',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "completedAt" TIMESTAMP(3),
+
+    CONSTRAINT "PackPurchase_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "PackTransaction" (
+    "id" TEXT NOT NULL,
+    "purchaseId" TEXT NOT NULL,
+    "tokenAddress" TEXT NOT NULL,
+    "symbol" TEXT NOT NULL,
+    "amountSol" DOUBLE PRECISION NOT NULL,
+    "amountReceived" DOUBLE PRECISION,
+    "txSignature" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'pending',
+    "error" TEXT,
+    "executedAt" TIMESTAMP(3),
+
+    CONSTRAINT "PackTransaction_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Order" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "tokenAddress" TEXT NOT NULL,
+    "symbol" TEXT NOT NULL,
+    "orderType" TEXT NOT NULL,
+    "side" TEXT NOT NULL,
+    "amountSol" DOUBLE PRECISION,
+    "amountTokens" DOUBLE PRECISION,
+    "triggerPrice" DOUBLE PRECISION NOT NULL,
+    "currentPrice" DOUBLE PRECISION,
+    "status" TEXT NOT NULL DEFAULT 'active',
+    "expiresAt" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "triggeredAt" TIMESTAMP(3),
+    "executedAt" TIMESTAMP(3),
+    "txSignature" TEXT,
+    "error" TEXT,
+    "jupiterOrderPubkey" TEXT,
+    "inputMint" TEXT,
+    "outputMint" TEXT,
+    "makingAmount" TEXT,
+    "takingAmount" TEXT,
+    "tokenDecimals" INTEGER,
+
+    CONSTRAINT "Order_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DcaSchedule" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "packId" TEXT,
+    "tokenAddress" TEXT,
+    "symbol" TEXT,
+    "name" TEXT NOT NULL,
+    "totalBudget" DOUBLE PRECISION NOT NULL,
+    "amountPerPeriod" DOUBLE PRECISION NOT NULL,
+    "frequency" TEXT NOT NULL,
+    "nextExecution" TIMESTAMP(3) NOT NULL,
+    "executionsLeft" INTEGER NOT NULL,
+    "executionsDone" INTEGER NOT NULL DEFAULT 0,
+    "averagePrice" DOUBLE PRECISION,
+    "totalInvested" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "totalReceived" DOUBLE PRECISION NOT NULL DEFAULT 0,
+    "status" TEXT NOT NULL DEFAULT 'active',
+    "jupiterDcaPubkey" TEXT,
+    "txSignature" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "DcaSchedule_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "DcaExecution" (
+    "id" TEXT NOT NULL,
+    "scheduleId" TEXT NOT NULL,
+    "amountSol" DOUBLE PRECISION NOT NULL,
+    "amountReceived" DOUBLE PRECISION,
+    "priceAtExecution" DOUBLE PRECISION,
+    "txSignature" TEXT,
+    "status" TEXT NOT NULL DEFAULT 'pending',
+    "error" TEXT,
+    "executedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "DcaExecution_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex for Pack Trading System
+CREATE INDEX "Pack_userId_idx" ON "Pack"("userId");
+
+CREATE INDEX "PackToken_packId_idx" ON "PackToken"("packId");
+
+CREATE INDEX "PackPurchase_userId_idx" ON "PackPurchase"("userId");
+
+CREATE INDEX "PackPurchase_packId_idx" ON "PackPurchase"("packId");
+
+CREATE INDEX "PackTransaction_purchaseId_idx" ON "PackTransaction"("purchaseId");
+
+CREATE INDEX "Order_userId_idx" ON "Order"("userId");
+
+CREATE INDEX "Order_status_idx" ON "Order"("status");
+
+CREATE INDEX "Order_tokenAddress_idx" ON "Order"("tokenAddress");
+
+CREATE INDEX "Order_jupiterOrderPubkey_idx" ON "Order"("jupiterOrderPubkey");
+
+CREATE INDEX "DcaSchedule_userId_idx" ON "DcaSchedule"("userId");
+
+CREATE INDEX "DcaSchedule_status_idx" ON "DcaSchedule"("status");
+
+CREATE INDEX "DcaSchedule_nextExecution_idx" ON "DcaSchedule"("nextExecution");
+
+CREATE INDEX "DcaSchedule_jupiterDcaPubkey_idx" ON "DcaSchedule"("jupiterDcaPubkey");
+
+CREATE INDEX "DcaExecution_scheduleId_idx" ON "DcaExecution"("scheduleId");
+
+-- AddForeignKey for Pack Trading System
+ALTER TABLE "Pack" ADD CONSTRAINT "Pack_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE "PackToken" ADD CONSTRAINT "PackToken_packId_fkey" FOREIGN KEY ("packId") REFERENCES "Pack"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE "PackPurchase" ADD CONSTRAINT "PackPurchase_packId_fkey" FOREIGN KEY ("packId") REFERENCES "Pack"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+ALTER TABLE "PackPurchase" ADD CONSTRAINT "PackPurchase_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+ALTER TABLE "PackTransaction" ADD CONSTRAINT "PackTransaction_purchaseId_fkey" FOREIGN KEY ("purchaseId") REFERENCES "PackPurchase"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE "Order" ADD CONSTRAINT "Order_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE "DcaSchedule" ADD CONSTRAINT "DcaSchedule_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+ALTER TABLE "DcaSchedule" ADD CONSTRAINT "DcaSchedule_packId_fkey" FOREIGN KEY ("packId") REFERENCES "Pack"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+ALTER TABLE "DcaExecution" ADD CONSTRAINT "DcaExecution_scheduleId_fkey" FOREIGN KEY ("scheduleId") REFERENCES "DcaSchedule"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -9,26 +9,82 @@ import {
   ListTodo,
   Coins,
   Users,
-  Plus,
   LogOut,
   Star,
   Menu,
   X,
   Key,
+  ArrowLeftRight,
+  Package,
+  Target,
+  Clock,
+  HelpCircle,
+  Zap,
+  ChevronDown,
+  Search,
+  PieChart,
+  Plus,
+  Shield,
+  Scale,
 } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import Image from 'next/image';
+import { WalletProvider } from '@/components/wallet';
+import { WaveBackground } from '@/components/ui/WaveBackground';
 
 const navigation = [
   { name: 'Watchlist', href: '/', icon: Star },
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'Analysis Queue', href: '/queue', icon: ListTodo },
-  { name: 'All Tokens', href: '/tokens', icon: Coins },
+  { name: 'Token Analysis', href: '/analysis', icon: Shield },
+  { name: 'Trading', href: '/trading', icon: ArrowLeftRight },
+  { name: 'Packs', href: '/packs', icon: Package },
+  { name: 'Help', href: '/help', icon: HelpCircle },
 ];
 
 const adminNavigation = [
   { name: 'Users', href: '/users', icon: Users },
 ];
+
+const quickActions = [
+  { name: 'Add to Watchlist', href: '/?action=add', icon: Plus },
+  { name: 'Analyze Token', href: '/analysis?action=new', icon: Search },
+  { name: 'Quick Trade', href: '/trading', icon: ArrowLeftRight },
+  { name: 'Create Pack', href: '/packs/create', icon: Package },
+  { name: 'Create Order', href: '/trading?tab=orders&action=create', icon: Target },
+  { name: 'Create DCA', href: '/trading?tab=dca&action=create', icon: Clock },
+];
+
+function QuickActionsDropdown() {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="p-4 relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-gradient-to-r from-brand-500 to-accent-500 text-white rounded-lg font-medium hover:from-brand-400 hover:to-accent-400 transition-all duration-300 shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40"
+      >
+        <Zap className="w-5 h-5" />
+        Quick Actions
+        <ChevronDown className={cn("w-4 h-4 transition-transform", isOpen && "rotate-180")} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute left-4 right-4 mt-2 bg-dark-card border border-dark-border rounded-lg shadow-xl z-50 overflow-hidden">
+          {quickActions.map((action) => (
+            <Link
+              key={action.name}
+              href={action.href}
+              onClick={() => setIsOpen(false)}
+              className="flex items-center gap-3 px-4 py-3 text-sm text-gray-300 hover:bg-dark-hover hover:text-white transition-colors"
+            >
+              <action.icon className="w-4 h-4 text-brand-400" />
+              {action.name}
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function MobileLogo() {
   return (
@@ -72,14 +128,16 @@ function getRoleLabel(role) {
 
 export function DashboardShell({ user, children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const pathname = usePathname();
 
   const isAdmin = user?.role === 'ADMIN';
   const isViewer = user?.role === 'VIEWER';
 
-  // Close sidebar when route changes
+  // Close sidebar and user menu when route changes
   useEffect(() => {
     setSidebarOpen(false);
+    setUserMenuOpen(false);
   }, [pathname]);
 
   // Prevent body scroll when sidebar is open
@@ -96,8 +154,11 @@ export function DashboardShell({ user, children }) {
 
   return (
     <div className="min-h-screen bg-dark-bg">
+      {/* Animated Wave Background */}
+      <WaveBackground />
+
       {/* Mobile Header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-dark-card border-b border-dark-border flex items-center justify-between px-4">
+      <header className="lg:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-black/10 border-b border-white/5 flex items-center justify-between px-4">
         <MobileLogo />
         <button
           onClick={() => setSidebarOpen(true)}
@@ -118,7 +179,7 @@ export function DashboardShell({ user, children }) {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-64 bg-dark-card border-r border-dark-border flex flex-col transform transition-transform duration-300 ease-in-out',
+          'fixed inset-y-0 left-0 z-50 w-64 bg-black/10 border-r border-white/5 flex flex-col transform transition-transform duration-300 ease-in-out',
           'lg:translate-x-0',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
@@ -136,17 +197,9 @@ export function DashboardShell({ user, children }) {
           </button>
         </div>
 
-        {/* Quick Action - Only for non-viewers */}
+        {/* Quick Actions Dropdown - Only for non-viewers */}
         {!isViewer && (
-          <div className="p-4">
-            <Link
-              href="/tokens/new"
-              className="flex items-center justify-center gap-2 w-full px-4 py-2.5 bg-gradient-to-r from-brand-500 to-accent-500 text-white rounded-lg font-medium hover:from-brand-400 hover:to-accent-400 transition-all duration-300 shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40 hover:-translate-y-0.5"
-            >
-              <Plus className="w-5 h-5" />
-              Submit Token
-            </Link>
-          </div>
+          <QuickActionsDropdown />
         )}
 
         {/* Navigation */}
@@ -206,13 +259,16 @@ export function DashboardShell({ user, children }) {
 
         {/* User Info */}
         <div className="p-4 border-t border-dark-border">
-          <div className="flex items-center gap-3 px-3 py-2">
+          <button
+            onClick={() => setUserMenuOpen(!userMenuOpen)}
+            className="w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-dark-hover transition-colors"
+          >
             <div className="w-8 h-8 rounded-full bg-brand-400/20 flex items-center justify-center">
               <span className="text-brand-400 font-medium text-sm">
                 {user?.name?.charAt(0) || 'U'}
               </span>
             </div>
-            <div className="flex-1 min-w-0">
+            <div className="flex-1 min-w-0 text-left">
               <p className="text-sm font-medium text-gray-200 truncate">
                 {user?.name || 'User'}
               </p>
@@ -220,29 +276,45 @@ export function DashboardShell({ user, children }) {
                 {getRoleLabel(user?.role)}
               </p>
             </div>
-          </div>
-          <div className="flex items-center gap-2 mt-2 px-3">
+            <ChevronDown className={cn("w-4 h-4 text-gray-500 transition-transform", userMenuOpen && "rotate-180")} />
+          </button>
+          {/* User Menu - Shows on click */}
+          {userMenuOpen && (
+            <div className="flex items-center gap-2 mt-2 px-3">
+              <Link
+                href="/account"
+                className="flex-1 flex items-center justify-center gap-2 py-2 text-xs text-gray-400 hover:text-brand-400 hover:bg-brand-400/10 rounded-lg transition-colors"
+              >
+                <Key className="w-3.5 h-3.5" />
+                Password
+              </Link>
+              <button
+                onClick={() => signOut({ callbackUrl: `${window.location.origin}/login` })}
+                className="flex-1 flex items-center justify-center gap-2 py-2 text-xs text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                Sign Out
+              </button>
+            </div>
+          )}
+          {/* Privacy & Legal Link */}
+          <div className="mt-3 pt-3 border-t border-dark-border/50 px-3">
             <Link
-              href="/account"
-              className="flex-1 flex items-center justify-center gap-2 py-2 text-xs text-gray-400 hover:text-brand-400 hover:bg-brand-400/10 rounded-lg transition-colors"
+              href="/legal"
+              className="flex items-center justify-center gap-1.5 text-[11px] text-gray-500 hover:text-gray-400 transition-colors"
             >
-              <Key className="w-3.5 h-3.5" />
-              Password
+              <Scale className="w-3 h-3" />
+              Privacy & Legal
             </Link>
-            <button
-              onClick={() => signOut({ callbackUrl: `${window.location.origin}/login` })}
-              className="flex-1 flex items-center justify-center gap-2 py-2 text-xs text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              Sign Out
-            </button>
           </div>
         </div>
       </aside>
 
       {/* Main Content */}
       <main className="lg:pl-64 pt-14 lg:pt-0 min-h-screen">
-        {children}
+        <WalletProvider>
+          {children}
+        </WalletProvider>
       </main>
     </div>
   );

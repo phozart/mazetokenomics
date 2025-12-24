@@ -19,6 +19,10 @@ model User {
   activities  Activity[]
   manualChecks ManualCheck[]
   watchlist   WatchlistItem[]
+  packs       Pack[]
+  packPurchases PackPurchase[]
+  orders      Order[]
+  dcaSchedules DcaSchedule[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 }
@@ -504,6 +508,7 @@ model WatchlistItem {
 
   // User customization
   notes           String?
+  sortOrder       Int       @default(0)
 
   addedAt         DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -511,6 +516,7 @@ model WatchlistItem {
   @@unique([userId, tokenId])
   @@unique([userId, contractAddress, chain])
   @@index([userId])
+  @@index([userId, sortOrder])
 }
 
 // ============================================================================
@@ -532,4 +538,157 @@ model PriceSnapshot {
 
   @@index([contractAddress, chain, timestamp])
   @@index([timestamp])
+}
+
+// ============================================================================
+// PACK TRADING SYSTEM
+// ============================================================================
+
+// Token Pack - collection of tokens with allocations
+model Pack {
+  id            String         @id @default(cuid())
+  userId        String
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name          String
+  description   String?
+  riskLevel     String         @default("medium") // low, medium, high
+  tokens        PackToken[]
+  purchases     PackPurchase[]
+  dcaSchedules  DcaSchedule[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([userId])
+}
+
+// Token within a pack with its allocation weight
+model PackToken {
+  id           String   @id @default(cuid())
+  packId       String
+  pack         Pack     @relation(fields: [packId], references: [id], onDelete: Cascade)
+  tokenAddress String   // Solana mint address
+  symbol       String
+  name         String
+  weight       Float    // Percentage (0-100)
+  logoURI      String?
+  decimals     Int      @default(9)
+
+  @@index([packId])
+}
+
+// Record of a pack purchase execution
+model PackPurchase {
+  id             String            @id @default(cuid())
+  packId         String
+  pack           Pack              @relation(fields: [packId], references: [id])
+  userId         String
+  user           User              @relation(fields: [userId], references: [id])
+  totalAmountSol Float             // Total SOL invested
+  status         String            @default("pending") // pending, executing, completed, partial, failed
+  transactions   PackTransaction[]
+  createdAt      DateTime          @default(now())
+  completedAt    DateTime?
+
+  @@index([userId])
+  @@index([packId])
+}
+
+// Individual transaction within a pack purchase
+model PackTransaction {
+  id             String       @id @default(cuid())
+  purchaseId     String
+  purchase       PackPurchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  tokenAddress   String
+  symbol         String
+  amountSol      Float        // SOL spent
+  amountReceived Float?       // Tokens received
+  txSignature    String?
+  status         String       @default("pending") // pending, success, failed
+  error          String?
+  executedAt     DateTime?
+
+  @@index([purchaseId])
+}
+
+// Advanced order (limit buy, limit sell, stop loss, take profit)
+model Order {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenAddress String
+  symbol       String
+  orderType    String    // limit_buy, limit_sell, stop_loss, take_profit
+  side         String    // buy, sell
+  amountSol    Float?    // For buy orders
+  amountTokens Float?    // For sell orders
+  triggerPrice Float     // USD price to trigger
+  currentPrice Float?    // Last known price
+  status       String    @default("active") // active, triggered, executed, cancelled, expired
+  expiresAt    DateTime?
+  createdAt    DateTime  @default(now())
+  triggeredAt  DateTime?
+  executedAt   DateTime?
+  txSignature  String?
+  error        String?
+
+  // Jupiter Limit Order fields
+  jupiterOrderPubkey String?   // Jupiter on-chain order pubkey
+  inputMint          String?   // Token being sold (SOL for buy orders)
+  outputMint         String?   // Token being bought (SOL for sell orders)
+  makingAmount       String?   // Amount being offered (in smallest unit)
+  takingAmount       String?   // Amount expected to receive (in smallest unit)
+  tokenDecimals      Int?      // Token decimals for amount calculations
+
+  @@index([userId])
+  @@index([status])
+  @@index([tokenAddress])
+  @@index([jupiterOrderPubkey])
+}
+
+// DCA (Dollar Cost Averaging) Schedule
+model DcaSchedule {
+  id              String         @id @default(cuid())
+  userId          String
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  packId          String?
+  pack            Pack?          @relation(fields: [packId], references: [id])
+  tokenAddress    String?        // For single token DCA
+  symbol          String?
+  name            String         // Schedule name
+  totalBudget     Float          // Total SOL to invest
+  amountPerPeriod Float          // SOL per execution
+  frequency       String         // daily, weekly, biweekly, monthly
+  nextExecution   DateTime
+  executionsLeft  Int
+  executionsDone  Int            @default(0)
+  averagePrice    Float?         // Track average entry price
+  totalInvested   Float          @default(0)
+  totalReceived   Float          @default(0)
+  status          String         @default("active") // active, paused, completed, cancelled
+  jupiterDcaPubkey String?       // Jupiter DCA program account pubkey
+  txSignature     String?        // Initial creation transaction
+  executions      DcaExecution[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([nextExecution])
+  @@index([jupiterDcaPubkey])
+}
+
+// Individual DCA execution record
+model DcaExecution {
+  id               String      @id @default(cuid())
+  scheduleId       String
+  schedule         DcaSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  amountSol        Float
+  amountReceived   Float?
+  priceAtExecution Float?
+  txSignature      String?
+  status           String      @default("pending") // pending, success, failed
+  error            String?
+  executedAt       DateTime    @default(now())
+
+  @@index([scheduleId])
 }

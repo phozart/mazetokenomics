@@ -3,8 +3,24 @@
 import Link from 'next/link';
 import { ChainBadge, RiskBadge } from '@/components/ui/Badge';
 import { formatAddress } from '@/lib/utils';
-import { Trash2, ExternalLink, TrendingUp, TrendingDown, MoreVertical, Eye } from 'lucide-react';
+import { Trash2, ExternalLink, TrendingUp, TrendingDown, MoreVertical, Eye, GripVertical } from 'lucide-react';
 import { useState } from 'react';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 function formatPrice(price) {
   if (!price) return '-';
@@ -282,117 +298,184 @@ function MobileCard({ item, priceData, onRemove, onTokenClick, isLoading }) {
   );
 }
 
-function DesktopTable({ items, prices, onRemove, onTokenClick, isLoading }) {
-  return (
-    <div className="overflow-x-auto">
-      <table className="w-full">
-        <thead>
-          <tr className="border-b border-dark-border">
-            <th className="table-header text-left px-6 py-3">Token</th>
-            <th className="table-header text-left px-4 py-3">Chain</th>
-            <th className="table-header text-right px-4 py-3">Price</th>
-            <th className="table-header text-right px-4 py-3">24h</th>
-            <th className="table-header text-right px-4 py-3">MCap</th>
-            <th className="table-header text-center px-4 py-3">Risk</th>
-            <th className="table-header text-right px-6 py-3">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((item) => {
-            const priceData = prices?.[item.id];
-            const symbol = item.token?.symbol || item.symbol || 'Unknown';
-            const name = item.token?.name || item.name;
-            const chain = item.token?.chain || item.chain;
-            const address = item.token?.contractAddress || item.contractAddress;
-            const vettingProcess = item.token?.vettingProcess;
+function SortableRow({ item, priceData, onRemove, onTokenClick, isLoading }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id });
 
-            return (
-              <tr
-                key={item.id}
-                className="table-row cursor-pointer hover:bg-dark-hover/50"
-                onClick={() => onTokenClick?.(item, priceData)}
-              >
-                <td className="table-cell px-6">
-                  <div className="font-medium text-gray-100">{symbol}</div>
-                  {name && <div className="text-xs text-gray-500">{name}</div>}
-                  {address && (
-                    <div className="text-xs text-gray-600 font-mono">
-                      {formatAddress(address, 6)}
-                    </div>
-                  )}
-                </td>
-                <td className="table-cell px-4">
-                  {chain && <ChainBadge chain={chain} />}
-                </td>
-                <td className="table-cell px-4 text-right font-mono">
-                  {isLoading ? (
-                    <span className="text-gray-500 animate-pulse">...</span>
-                  ) : (
-                    formatPrice(priceData?.priceUsd)
-                  )}
-                </td>
-                <td className="table-cell px-4 text-right">
-                  {isLoading ? (
-                    <span className="text-gray-500 animate-pulse">...</span>
-                  ) : (
-                    <PriceChange change={priceData?.priceChange24h} />
-                  )}
-                </td>
-                <td className="table-cell px-4 text-right text-gray-400">
-                  {isLoading ? (
-                    <span className="text-gray-500 animate-pulse">...</span>
-                  ) : (
-                    formatMarketCap(priceData?.marketCap)
-                  )}
-                </td>
-                <td className="table-cell px-4 text-center">
-                  {vettingProcess?.riskLevel ? (
-                    <RiskBadge riskLevel={vettingProcess.riskLevel} />
-                  ) : vettingProcess?.overallScore != null ? (
-                    <span className="text-sm font-medium">
-                      {Math.round(vettingProcess.overallScore)}
-                    </span>
-                  ) : (
-                    <span className="text-gray-500 text-sm">-</span>
-                  )}
-                </td>
-                <td className="table-cell px-6 text-right" onClick={(e) => e.stopPropagation()}>
-                  <div className="flex items-center justify-end gap-2">
-                    <button
-                      onClick={() => onTokenClick?.(item, priceData)}
-                      className="p-1.5 text-gray-400 hover:text-brand-400 hover:bg-brand-400/10 rounded transition-colors"
-                      title="View Details"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </button>
-                    {vettingProcess?.id && (
-                      <Link
-                        href={`/tokens/${vettingProcess.id}`}
-                        className="p-1.5 text-gray-400 hover:text-brand-400 hover:bg-brand-400/10 rounded transition-colors"
-                        title="View Analysis"
-                      >
-                        <ExternalLink className="w-4 h-4" />
-                      </Link>
-                    )}
-                    <button
-                      onClick={() => onRemove(item.id)}
-                      className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded transition-colors"
-                      title="Remove from watchlist"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+
+  const symbol = item.token?.symbol || item.symbol || 'Unknown';
+  const name = item.token?.name || item.name;
+  const chain = item.token?.chain || item.chain;
+  const address = item.token?.contractAddress || item.contractAddress;
+  const vettingProcess = item.token?.vettingProcess;
+
+  return (
+    <tr
+      ref={setNodeRef}
+      style={style}
+      className="table-row cursor-pointer hover:bg-dark-hover/50"
+      onClick={() => onTokenClick?.(item, priceData)}
+    >
+      <td className="table-cell px-2 w-8" onClick={(e) => e.stopPropagation()}>
+        <button
+          {...attributes}
+          {...listeners}
+          className="p-1.5 text-gray-500 hover:text-gray-300 cursor-grab active:cursor-grabbing rounded"
+          title="Drag to reorder"
+        >
+          <GripVertical className="w-4 h-4" />
+        </button>
+      </td>
+      <td className="table-cell px-4">
+        <div className="font-medium text-gray-100">{symbol}</div>
+        {name && <div className="text-xs text-gray-500">{name}</div>}
+        {address && (
+          <div className="text-xs text-gray-600 font-mono">
+            {formatAddress(address, 6)}
+          </div>
+        )}
+      </td>
+      <td className="table-cell px-4">
+        {chain && <ChainBadge chain={chain} />}
+      </td>
+      <td className="table-cell px-4 text-right font-mono">
+        {isLoading ? (
+          <span className="text-gray-500 animate-pulse">...</span>
+        ) : (
+          formatPrice(priceData?.priceUsd)
+        )}
+      </td>
+      <td className="table-cell px-4 text-right">
+        {isLoading ? (
+          <span className="text-gray-500 animate-pulse">...</span>
+        ) : (
+          <PriceChange change={priceData?.priceChange24h} />
+        )}
+      </td>
+      <td className="table-cell px-4 text-right text-gray-400">
+        {isLoading ? (
+          <span className="text-gray-500 animate-pulse">...</span>
+        ) : (
+          formatMarketCap(priceData?.marketCap)
+        )}
+      </td>
+      <td className="table-cell px-4 text-center">
+        {vettingProcess?.riskLevel ? (
+          <RiskBadge riskLevel={vettingProcess.riskLevel} />
+        ) : vettingProcess?.overallScore != null ? (
+          <span className="text-sm font-medium">
+            {Math.round(vettingProcess.overallScore)}
+          </span>
+        ) : (
+          <span className="text-gray-500 text-sm">-</span>
+        )}
+      </td>
+      <td className="table-cell px-6 text-right" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-end gap-2">
+          <button
+            onClick={() => onTokenClick?.(item, priceData)}
+            className="p-1.5 text-gray-400 hover:text-brand-400 hover:bg-brand-400/10 rounded transition-colors"
+            title="View Details"
+          >
+            <Eye className="w-4 h-4" />
+          </button>
+          {vettingProcess?.id && (
+            <Link
+              href={`/tokens/${vettingProcess.id}`}
+              className="p-1.5 text-gray-400 hover:text-brand-400 hover:bg-brand-400/10 rounded transition-colors"
+              title="View Analysis"
+            >
+              <ExternalLink className="w-4 h-4" />
+            </Link>
+          )}
+          <button
+            onClick={() => onRemove(item.id)}
+            className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-red-400/10 rounded transition-colors"
+            title="Remove from watchlist"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      </td>
+    </tr>
   );
 }
 
-export function WatchlistTable({ items, prices, onRemove, onTokenClick, isLoading }) {
+function DesktopTable({ items, prices, onRemove, onTokenClick, isLoading, onReorder }) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+
+    if (active.id !== over?.id) {
+      const oldIndex = items.findIndex((item) => item.id === active.id);
+      const newIndex = items.findIndex((item) => item.id === over.id);
+      const newItems = arrayMove(items, oldIndex, newIndex);
+      onReorder?.(newItems);
+    }
+  };
+
+  return (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-dark-border">
+              <th className="table-header text-left px-2 py-3 w-8"></th>
+              <th className="table-header text-left px-4 py-3">Token</th>
+              <th className="table-header text-left px-4 py-3">Chain</th>
+              <th className="table-header text-right px-4 py-3">Price</th>
+              <th className="table-header text-right px-4 py-3">24h</th>
+              <th className="table-header text-right px-4 py-3">MCap</th>
+              <th className="table-header text-center px-4 py-3">Risk</th>
+              <th className="table-header text-right px-6 py-3">Actions</th>
+            </tr>
+          </thead>
+          <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
+            <tbody>
+              {items.map((item) => (
+                <SortableRow
+                  key={item.id}
+                  item={item}
+                  priceData={prices?.[item.id]}
+                  onRemove={onRemove}
+                  onTokenClick={onTokenClick}
+                  isLoading={isLoading}
+                />
+              ))}
+            </tbody>
+          </SortableContext>
+        </table>
+      </div>
+    </DndContext>
+  );
+}
+
+export function WatchlistTable({ items, prices, onRemove, onTokenClick, isLoading, onReorder }) {
   if (!items || items.length === 0) {
     return (
       <div className="text-center py-12 px-6">
@@ -468,6 +551,7 @@ export function WatchlistTable({ items, prices, onRemove, onTokenClick, isLoadin
           onRemove={onRemove}
           onTokenClick={onTokenClick}
           isLoading={isLoading}
+          onReorder={onReorder}
         />
       </div>
     </>

@@ -9,7 +9,7 @@ const fs = require('fs');
 const path = require('path');
 
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
-const SVG_PATH = path.join(PUBLIC_DIR, 'favicon.svg');
+const SVG_PATH = path.join(PUBLIC_DIR, 'icon.svg');
 
 // Icon sizes needed for PWA and iOS
 const SIZES = [

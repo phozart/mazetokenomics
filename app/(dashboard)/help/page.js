@@ -24,6 +24,11 @@ import {
   Droplets,
   Clock,
   Network,
+  Package,
+  Target,
+  ArrowLeftRight,
+  DollarSign,
+  Repeat,
 } from 'lucide-react';
 
 const helpSections = [
@@ -168,6 +173,143 @@ const helpSections = [
       {
         title: 'Sorting',
         content: 'Sort by date analyzed, risk score, or alphabetically by name.',
+      },
+    ],
+  },
+  {
+    id: 'trading',
+    title: 'Trading',
+    icon: ArrowLeftRight,
+    description: 'Swap tokens directly via Jupiter aggregator',
+    items: [
+      {
+        title: 'Quick Swap',
+        content: 'Go to the Trade page to swap SOL for any token. Enter the token address or select from your watchlist, specify the amount, and execute the swap via Jupiter.',
+      },
+      {
+        title: 'Jupiter Integration',
+        content: 'Swaps are executed through Jupiter, Solana\'s leading DEX aggregator. Jupiter finds the best route across all DEXs to get you the best price.',
+      },
+      {
+        title: 'SOL/USD Toggle',
+        content: 'On all trading screens, you can toggle between displaying values in SOL or USD. A live SOL price indicator shows the current price at the top of modals.',
+      },
+      {
+        title: 'Connecting Your Wallet',
+        content: 'Click "Connect Wallet" to connect Phantom, Solflare, or other Solana wallets. Your wallet is required to sign and execute transactions.',
+      },
+      {
+        title: 'Transaction Fees',
+        content: 'Swaps incur small network fees (typically <$0.01). Jupiter may also charge a small platform fee on some routes.',
+      },
+    ],
+  },
+  {
+    id: 'packs',
+    title: 'Token Packs',
+    icon: Package,
+    description: 'Create diversified portfolios from vetted tokens',
+    items: [
+      {
+        title: 'What are Packs?',
+        content: 'Token Packs are custom portfolios of tokens with defined weight allocations. Instead of buying tokens one by one, create a pack and invest in all tokens at once with a single amount.',
+      },
+      {
+        title: 'Creating a Pack',
+        content: 'Go to Packs → Create Pack. Select tokens from your watchlist, assign percentage weights (must total 100%), name your pack, and set a risk level (Low/Medium/High).',
+      },
+      {
+        title: 'Weight Distribution',
+        content: `Use the quick distribution buttons:
+- Equal: Distributes weight equally across all tokens
+- By Score: Higher weights to tokens with better security scores
+- Custom: Manually set each token's weight`,
+      },
+      {
+        title: 'Buying a Pack',
+        content: 'Click "Buy Pack" and enter the total SOL amount to invest. The system calculates how much goes to each token based on weights, then executes swaps via Jupiter for each token.',
+      },
+      {
+        title: 'Pack Performance',
+        content: 'Track how your packs perform over time. The pack detail page shows overall performance and individual token performance.',
+      },
+    ],
+  },
+  {
+    id: 'orders',
+    title: 'Advanced Orders',
+    icon: Target,
+    description: 'Set limit orders, stop losses, and take profits',
+    items: [
+      {
+        title: 'Order Types',
+        content: `Maze supports four order types:
+- Limit Buy: Buy when price drops to your target
+- Limit Sell: Sell when price rises to your target
+- Stop Loss: Auto-sell to limit losses
+- Take Profit: Auto-sell to lock in gains`,
+      },
+      {
+        title: 'Creating Orders',
+        content: 'From the Orders page, click "Create Order". Select the order type, choose a token, enter the trigger price, and specify the amount. Orders are submitted to Jupiter\'s Trigger API.',
+      },
+      {
+        title: 'Jupiter Limit Orders',
+        content: 'Orders are placed on-chain via Jupiter\'s Trigger order system. Once submitted, orders are active until filled, cancelled, or expired. You can view and manage orders on Jupiter.',
+      },
+      {
+        title: 'Order Status',
+        content: `Orders can have these statuses:
+- Active: Waiting for price trigger
+- Pending: Being submitted
+- Filled: Successfully executed
+- Cancelled: Manually cancelled
+- Expired: Reached expiration without triggering`,
+      },
+      {
+        title: 'Minimum Order Size',
+        content: 'Jupiter requires a minimum order value of approximately $5 USD. Orders below this minimum will be rejected.',
+      },
+      {
+        title: 'Managing Orders',
+        content: 'View all your orders on the Orders page. Click on any order to see details, or cancel active orders. Jupiter order links let you manage orders directly on Jupiter.',
+      },
+    ],
+  },
+  {
+    id: 'dca',
+    title: 'DCA (Dollar Cost Averaging)',
+    icon: Repeat,
+    description: 'Schedule recurring automated purchases',
+    items: [
+      {
+        title: 'What is DCA?',
+        content: 'Dollar Cost Averaging is an investment strategy where you invest fixed amounts at regular intervals. This reduces the impact of volatility by averaging your entry price over time.',
+      },
+      {
+        title: 'Creating a DCA Schedule',
+        content: 'Go to DCA → Create DCA. Choose between investing in a single token or an entire pack. Set your total budget, frequency (daily/weekly/monthly), and number of executions.',
+      },
+      {
+        title: 'DCA for Packs',
+        content: 'Select a pack to DCA into multiple tokens at once. Each execution distributes your investment across all pack tokens according to their weights.',
+      },
+      {
+        title: 'Execution Schedule',
+        content: `Choose your frequency:
+- Daily: Buy every day
+- Weekly: Buy once per week
+- Monthly: Buy once per month
+
+The system calculates amount per execution automatically.`,
+      },
+      {
+        title: 'Tracking Progress',
+        content: 'The DCA dashboard shows execution progress, total invested, average entry price, and next execution date. View execution history for each schedule.',
+      },
+      {
+        title: 'Pausing & Cancelling',
+        content: 'Pause a schedule to temporarily stop executions (resume anytime). Cancel to permanently stop the schedule. Any remaining budget is not affected.',
       },
     ],
   },
@@ -353,6 +495,28 @@ export default function HelpPage() {
               description="Submit any token for a comprehensive security analysis"
             />
             <QuickTip
+              icon={Package}
+              title="Create Packs"
+              description="Build diversified portfolios and invest in multiple tokens at once"
+            />
+            <QuickTip
+              icon={Target}
+              title="Set Orders"
+              description="Create limit orders, stop losses, and take profits automatically"
+            />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+            <QuickTip
+              icon={Repeat}
+              title="DCA Strategy"
+              description="Schedule recurring purchases to average your entry price"
+            />
+            <QuickTip
+              icon={DollarSign}
+              title="SOL/USD Toggle"
+              description="Switch between SOL and USD display on all trading screens"
+            />
+            <QuickTip
               icon={Lock}
               title="Vault Detection"
               description="Locked tokens in vaults are highlighted - they can't be sold"
@@ -453,6 +617,30 @@ export default function HelpPage() {
               <div>
                 <dt className="font-medium text-gray-100">Diamond Hands</dt>
                 <dd className="text-sm text-gray-400 mt-0.5">Holders who keep tokens for long periods (30+ days).</dd>
+              </div>
+              <div>
+                <dt className="font-medium text-gray-100">DCA (Dollar Cost Averaging)</dt>
+                <dd className="text-sm text-gray-400 mt-0.5">Investing fixed amounts at regular intervals to reduce volatility impact.</dd>
+              </div>
+              <div>
+                <dt className="font-medium text-gray-100">Limit Order</dt>
+                <dd className="text-sm text-gray-400 mt-0.5">An order to buy/sell at a specific price or better.</dd>
+              </div>
+              <div>
+                <dt className="font-medium text-gray-100">Stop Loss</dt>
+                <dd className="text-sm text-gray-400 mt-0.5">Automatic sell order that triggers when price drops below target.</dd>
+              </div>
+              <div>
+                <dt className="font-medium text-gray-100">Take Profit</dt>
+                <dd className="text-sm text-gray-400 mt-0.5">Automatic sell order that triggers when price rises to target.</dd>
+              </div>
+              <div>
+                <dt className="font-medium text-gray-100">Slippage</dt>
+                <dd className="text-sm text-gray-400 mt-0.5">Price difference between expected and executed trade price.</dd>
+              </div>
+              <div>
+                <dt className="font-medium text-gray-100">Token Pack</dt>
+                <dd className="text-sm text-gray-400 mt-0.5">A portfolio of tokens with defined weight allocations for one-click investing.</dd>
               </div>
             </dl>
           </CardContent>

@@ -6,7 +6,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { User, Lock, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { WaveBackground } from '@/components/ui/WaveBackground';
 import Image from 'next/image';
+import Link from 'next/link';
 
 function generateChallenge() {
   const operations = ['+', '-', '×'];
@@ -165,7 +167,10 @@ function LoginFormFallback() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-dark-bg flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Animated Wave Background */}
+      <WaveBackground />
+
       {/* Extra cosmic background elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-brand-500/10 rounded-full blur-3xl animate-pulse-slow" />
@@ -199,7 +204,9 @@ export default function LoginPage() {
         </div>
 
         <p className="text-center text-sm text-gray-500 mt-6">
-          <span className="cosmic-text font-medium">MazeTokenomics</span>
+          <Link href="/welcome" className="text-brand-400 hover:text-brand-300 transition-colors">
+            Learn what Maze can do →
+          </Link>
         </p>
       </div>
     </div>

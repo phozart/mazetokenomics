@@ -36,27 +36,55 @@ export async function GET(request) {
           },
         },
       },
-      orderBy: { addedAt: 'desc' },
+      orderBy: [{ sortOrder: 'asc' }, { addedAt: 'desc' }],
     });
 
     // For items without a linked token, try to find a matching token by contract address
     // This handles cases where a token was added to watchlist before being analyzed
+    // Also fix lowercased Solana addresses by fetching correct case from DexScreener
     const enhancedWatchlist = await Promise.all(
       watchlist.map(async (item) => {
+        let updatedItem = { ...item };
+
+        // Fix lowercased Solana addresses
+        if (item.chain === 'SOLANA' && item.contractAddress) {
+          const isLikelyLowercased = item.contractAddress === item.contractAddress.toLowerCase() &&
+            /[a-z]/.test(item.contractAddress);
+
+          if (isLikelyLowercased) {
+            try {
+              const dexData = await getTokenPairs(item.contractAddress);
+              const correctAddress = dexData?.pairs?.[0]?.baseToken?.address;
+
+              if (correctAddress && correctAddress !== item.contractAddress) {
+                // Update the watchlist item in the database
+                await prisma.watchlistItem.update({
+                  where: { id: item.id },
+                  data: { contractAddress: correctAddress },
+                });
+                updatedItem.contractAddress = correctAddress;
+                console.log(`[Watchlist] Fixed Solana address: ${item.contractAddress} -> ${correctAddress}`);
+              }
+            } catch (error) {
+              console.error('Failed to fix Solana address:', error);
+            }
+          }
+        }
+
         // If already has a linked token with vetting data, use it
-        if (item.token?.vettingProcess) {
-          return item;
+        if (updatedItem.token?.vettingProcess) {
+          return updatedItem;
         }
 
         // Try to find a token by contract address
-        if (item.contractAddress && item.chain) {
+        if (updatedItem.contractAddress && updatedItem.chain) {
           const matchingToken = await prisma.token.findFirst({
             where: {
               contractAddress: {
-                equals: item.contractAddress,
+                equals: updatedItem.contractAddress,
                 mode: 'insensitive', // Case-insensitive match for addresses
               },
-              chain: item.chain,
+              chain: updatedItem.chain,
             },
             include: {
               vettingProcess: {
@@ -77,11 +105,11 @@ export async function GET(request) {
           });
 
           if (matchingToken) {
-            return { ...item, token: matchingToken };
+            return { ...updatedItem, token: matchingToken };
           }
         }
 
-        return item;
+        return updatedItem;
       })
     );
 
@@ -286,5 +314,40 @@ export async function POST(request) {
       error: 'Failed to add to watchlist',
       details: error.message
     }, { status: 500 });
+  }
+}
+
+// PATCH /api/watchlist - Reorder watchlist items
+export async function PATCH(request) {
+  try {
+    const session = await getSession();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { orderedIds } = body;
+
+    if (!Array.isArray(orderedIds)) {
+      return NextResponse.json({ error: 'orderedIds must be an array' }, { status: 400 });
+    }
+
+    // Update the sortOrder for each item
+    await Promise.all(
+      orderedIds.map((id, index) =>
+        prisma.watchlistItem.updateMany({
+          where: {
+            id,
+            userId: session.user.id, // Ensure user owns the item
+          },
+          data: { sortOrder: index },
+        })
+      )
+    );
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Watchlist reorder error:', error);
+    return NextResponse.json({ error: 'Failed to reorder watchlist' }, { status: 500 });
   }
 }
